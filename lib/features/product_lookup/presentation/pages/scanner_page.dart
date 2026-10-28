@@ -178,6 +178,19 @@ class ScannerPage extends StatelessWidget {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
+                          if (state.barcode.isNotEmpty) ...[
+                            Text(
+                              'Scanned Barcode: ${state.barcode}',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onErrorContainer,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                          ],
                           Text(
                             state.message,
                             style: TextStyle(

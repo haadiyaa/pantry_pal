@@ -9,8 +9,8 @@ class OpenFoodFactsApi {
             Dio(
               BaseOptions(
                 baseUrl: 'https://world.openfoodfacts.org/api/v2/product',
-                connectTimeout: const Duration(seconds: 5),
-                receiveTimeout: const Duration(seconds: 5),
+                connectTimeout: const Duration(seconds: 15),
+                receiveTimeout: const Duration(seconds: 15),
                 headers: {
                   'User-Agent':
                       'PantryPal - Flutter - Version 1.0.0 - https://github.com/hadiya/pantry_pal',
@@ -22,7 +22,7 @@ class OpenFoodFactsApi {
 
   Future<Product?> getProduct(String barcode) async {
     final response = await _dio.get<Map<String, dynamic>>(
-      '/$barcode.json',
+      '/${Uri.encodeComponent(barcode)}.json',
       queryParameters: {
         'fields': 'code,product_name,brands,categories_tags,image_url,quantity',
       },
@@ -40,7 +40,8 @@ class OpenFoodFactsApi {
 
     final rawName = (productData['product_name'] ??
             productData['product_name_en'] ??
-            '') as String;
+            '')
+        .toString();
 
     final categoryTags = (productData['categories_tags'] as List?)
             ?.map((e) => e.toString())
@@ -52,10 +53,10 @@ class OpenFoodFactsApi {
     return Product(
       barcode: barcode,
       name: rawName.trim().isNotEmpty ? rawName.trim() : 'Unnamed Product',
-      brand: productData['brands'] as String?,
+      brand: productData['brands']?.toString(),
       category: mappedCategory,
-      imageUrl: productData['image_url'] as String?,
-      quantity: productData['quantity'] as String?,
+      imageUrl: productData['image_url']?.toString(),
+      quantity: productData['quantity']?.toString(),
     );
   }
 }
