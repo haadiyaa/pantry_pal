@@ -31,6 +31,12 @@ class InventoryPage extends StatelessWidget {
               );
             },
           ),
+          IconButton(
+            key: const Key('settings_button'),
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: 'Notification Settings',
+            onPressed: () => context.push('/settings'),
+          ),
         ],
       ),
       body: Column(

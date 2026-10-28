@@ -5,6 +5,7 @@ import 'package:stream_transform/stream_transform.dart';
 
 import '../../domain/models/pantry_item.dart';
 import '../../domain/repositories/pantry_repository.dart';
+import '../../../notifications/domain/services/notification_sync_service.dart';
 
 part 'inventory_event.dart';
 part 'inventory_state.dart';
@@ -17,8 +18,12 @@ EventTransformer<E> debounceRestartable<E>(Duration duration) {
 }
 
 class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
-  InventoryBloc(this._repository) : super(const InventoryState()) {
-    on<InventoryStarted>((event, emit) => _refresh(emit));
+  InventoryBloc(
+    this._repository, {
+    NotificationSyncService? notificationSyncService,
+  })  : _syncService = notificationSyncService,
+        super(const InventoryState()) {
+    on<InventoryStarted>(_onStarted);
     on<InventorySearchChanged>(
       _onSearchChanged,
       transformer: debounceRestartable(const Duration(milliseconds: 300)),
@@ -32,6 +37,15 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
   }
 
   final PantryRepository _repository;
+  final NotificationSyncService? _syncService;
+
+  Future<void> _onStarted(
+    InventoryStarted event,
+    Emitter<InventoryState> emit,
+  ) async {
+    await _refresh(emit);
+    await _syncService?.syncNotifications();
+  }
 
   Future<void> _onSearchChanged(
     InventorySearchChanged event,
@@ -79,6 +93,7 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
     try {
       await _repository.add(event.item);
       await _refresh(emit);
+      await _syncService?.syncNotifications();
     } catch (e) {
       emit(
         state.copyWith(
@@ -96,6 +111,7 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
     try {
       await _repository.update(event.item);
       await _refresh(emit);
+      await _syncService?.syncNotifications();
     } catch (e) {
       emit(
         state.copyWith(
@@ -113,6 +129,7 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
     try {
       await _repository.delete(event.id);
       await _refresh(emit);
+      await _syncService?.syncNotifications();
     } catch (e) {
       emit(
         state.copyWith(
