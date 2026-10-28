@@ -238,6 +238,90 @@ class _ScannerCameraViewState extends State<_ScannerCameraView> {
   late final MobileScannerController _controller;
   bool _hasDetected = false;
 
+  void _showTestBarcodeDialog(BuildContext context) {
+    final textController = TextEditingController();
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Simulate Barcode Scan'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'Enter a barcode number or tap a sample product to test Open Food Facts lookup on the simulator:',
+              style: TextStyle(fontSize: 13),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: textController,
+              keyboardType: TextInputType.number,
+              autofocus: true,
+              decoration: const InputDecoration(
+                labelText: 'Barcode',
+                hintText: 'e.g. 5449000000996',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+            ),
+            const SizedBox(height: 14),
+            const Text(
+              'Sample Products:',
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                ActionChip(
+                  avatar: const Icon(Icons.fastfood, size: 16),
+                  label: const Text('Nutella'),
+                  onPressed: () {
+                    Navigator.pop(dialogContext);
+                    widget.onBarcodeDetected('3017620422003');
+                  },
+                ),
+                ActionChip(
+                  avatar: const Icon(Icons.local_drink, size: 16),
+                  label: const Text('Coca-Cola'),
+                  onPressed: () {
+                    Navigator.pop(dialogContext);
+                    widget.onBarcodeDetected('5449000000996');
+                  },
+                ),
+                ActionChip(
+                  avatar: const Icon(Icons.cookie, size: 16),
+                  label: const Text('Oreo'),
+                  onPressed: () {
+                    Navigator.pop(dialogContext);
+                    widget.onBarcodeDetected('7622210449283');
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final barcode = textController.text.trim();
+              if (barcode.isNotEmpty) {
+                Navigator.pop(dialogContext);
+                widget.onBarcodeDetected(barcode);
+              }
+            },
+            child: const Text('Lookup Product'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -270,24 +354,57 @@ class _ScannerCameraViewState extends State<_ScannerCameraView> {
         MobileScanner(
           controller: _controller,
           errorBuilder: (context, error) {
+            final isPermissionDenied =
+                error.errorCode == MobileScannerErrorCode.permissionDenied;
+
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.videocam_off_outlined, size: 64),
+                    Icon(
+                      isPermissionDenied
+                          ? Icons.videocam_off_outlined
+                          : Icons.no_photography_outlined,
+                      size: 64,
+                      color: Theme.of(context).colorScheme.error,
+                    ),
                     const SizedBox(height: 16),
                     Text(
-                      'Camera permission is required to scan barcodes.',
+                      isPermissionDenied
+                          ? 'Camera permission is required to scan barcodes.'
+                          : 'Camera is not available on this simulator.',
                       style: Theme.of(context).textTheme.titleMedium,
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 16),
-                    FilledButton(
-                      onPressed: openAppSettings,
-                      child: const Text('Open Settings'),
+                    const SizedBox(height: 8),
+                    Text(
+                      isPermissionDenied
+                          ? 'Please enable camera access in Settings.'
+                          : 'The iOS Simulator has no hardware camera. You can test the scanning pipeline with a sample barcode below.',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                      textAlign: TextAlign.center,
                     ),
+                    const SizedBox(height: 20),
+                    if (isPermissionDenied)
+                      FilledButton(
+                        onPressed: openAppSettings,
+                        child: const Text('Open Settings'),
+                      )
+                    else ...[
+                      FilledButton.icon(
+                        icon: const Icon(Icons.qr_code_scanner),
+                        label: const Text('Test with Barcode'),
+                        onPressed: () => _showTestBarcodeDialog(context),
+                      ),
+                      const SizedBox(height: 10),
+                      OutlinedButton.icon(
+                        icon: const Icon(Icons.edit_note),
+                        label: const Text('Enter Item Manually'),
+                        onPressed: () => context.pushReplacement('/item/new'),
+                      ),
+                    ],
                   ],
                 ),
               ),
