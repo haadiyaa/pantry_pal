@@ -58,3 +58,4 @@ final class ProductLookupFailure extends ProductLookupState {
 final class ProductLookupActionCompleted extends ProductLookupState {
   const ProductLookupActionCompleted();
 }
+

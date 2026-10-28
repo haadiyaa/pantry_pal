@@ -26,3 +26,4 @@ final class ProductLookupIncreaseQuantity extends ProductLookupEvent {
 final class ProductLookupReset extends ProductLookupEvent {
   const ProductLookupReset();
 }
+

@@ -7,3 +7,4 @@ abstract class ProductLookupRepository {
   /// Throws an exception on network failure when no cached entry is available.
   Future<Product?> lookupProduct(String barcode);
 }
+
