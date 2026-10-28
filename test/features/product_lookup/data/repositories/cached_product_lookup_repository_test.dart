@@ -179,5 +179,26 @@ void main() {
       final result = await repository.lookupProduct(testBarcode);
       expect(result, isNull);
     });
+
+    test('product not found: returns null when Open Food Facts returns 404',
+        () async {
+      when(() => mockDio.get<Map<String, dynamic>>(
+            any(),
+            queryParameters: any(named: 'queryParameters'),
+          )).thenAnswer(
+        (_) async => Response<Map<String, dynamic>>(
+          requestOptions: RequestOptions(path: '/$testBarcode.json'),
+          statusCode: 404,
+          data: {
+            'code': testBarcode,
+            'status': 0,
+            'status_verbose': 'product not found',
+          },
+        ),
+      );
+
+      final result = await repository.lookupProduct(testBarcode);
+      expect(result, isNull);
+    });
   });
 }

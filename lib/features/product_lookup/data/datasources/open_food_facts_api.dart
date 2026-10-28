@@ -11,6 +11,8 @@ class OpenFoodFactsApi {
                 baseUrl: 'https://world.openfoodfacts.org/api/v2/product',
                 connectTimeout: const Duration(seconds: 15),
                 receiveTimeout: const Duration(seconds: 15),
+                validateStatus: (status) =>
+                    status != null && (status < 300 || status == 404),
                 headers: {
                   'User-Agent':
                       'PantryPal - Flutter - Version 1.0.0 - https://github.com/hadiya/pantry_pal',
@@ -21,12 +23,24 @@ class OpenFoodFactsApi {
   final Dio _dio;
 
   Future<Product?> getProduct(String barcode) async {
-    final response = await _dio.get<Map<String, dynamic>>(
-      '/${Uri.encodeComponent(barcode)}.json',
-      queryParameters: {
-        'fields': 'code,product_name,brands,categories_tags,image_url,quantity',
-      },
-    );
+    final Response<Map<String, dynamic>> response;
+    try {
+      response = await _dio.get<Map<String, dynamic>>(
+        '/${Uri.encodeComponent(barcode)}.json',
+        queryParameters: {
+          'fields': 'code,product_name,brands,categories_tags,image_url,quantity',
+        },
+      );
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        return null;
+      }
+      rethrow;
+    }
+
+    if (response.statusCode == 404) {
+      return null;
+    }
 
     final data = response.data;
     if (data == null) return null;
