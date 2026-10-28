@@ -4,29 +4,42 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pantry_pal/features/inventory/domain/models/pantry_item.dart';
+import 'package:pantry_pal/features/inventory/domain/repositories/pantry_repository.dart';
 import 'package:pantry_pal/features/inventory/presentation/bloc/inventory_bloc.dart';
 import 'package:pantry_pal/features/inventory/presentation/pages/item_form_page.dart';
 
 class MockInventoryBloc extends MockBloc<InventoryEvent, InventoryState>
     implements InventoryBloc {}
 
+class MockPantryRepository extends Mock implements PantryRepository {}
+
+class FakePantryItem extends Fake implements PantryItem {}
+
 void main() {
   setUpAll(() {
     registerFallbackValue(const InventoryStarted());
+    registerFallbackValue(FakePantryItem());
   });
 
   late MockInventoryBloc inventoryBloc;
+  late MockPantryRepository repository;
 
   setUp(() {
     inventoryBloc = MockInventoryBloc();
+    repository = MockPantryRepository();
     when(() => inventoryBloc.state).thenReturn(const InventoryState());
+    when(() => repository.add(any())).thenAnswer((_) async => 1);
+    when(() => repository.update(any())).thenAnswer((_) async {});
   });
 
   Widget buildTestableWidget({int? itemId, PantryItem? initialItem}) {
     return MaterialApp(
-      home: BlocProvider<InventoryBloc>.value(
-        value: inventoryBloc,
-        child: ItemFormPage(itemId: itemId, initialItem: initialItem),
+      home: RepositoryProvider<PantryRepository>.value(
+        value: repository,
+        child: BlocProvider<InventoryBloc>.value(
+          value: inventoryBloc,
+          child: ItemFormPage(itemId: itemId, initialItem: initialItem),
+        ),
       ),
     );
   }
@@ -47,7 +60,8 @@ void main() {
       // Expect inline validation error to be rendered
       expect(find.text('Item name is required'), findsOneWidget);
 
-      // Verify that no event was dispatched to the Bloc
+      // Verify that no repository call or bloc refresh happened
+      verifyNever(() => repository.add(any()));
       verifyNever(() => inventoryBloc.add(any()));
     });
 
@@ -59,20 +73,21 @@ void main() {
       expect(find.text('1'), findsOneWidget);
 
       // Decrement button should be disabled when quantity is 1
-      final decrementButton =
-          tester.widget<IconButton>(find.byKey(const Key('quantity_decrement_button')));
+      final decrementButton = tester.widget<IconButton>(
+          find.byKey(const Key('quantity_decrement_button')));
       expect(decrementButton.onPressed, isNull);
 
       // Increment quantity to 2
-      final incrementButton = find.byKey(const Key('quantity_increment_button'));
+      final incrementButton =
+          find.byKey(const Key('quantity_increment_button'));
       await tester.tap(incrementButton);
       await tester.pumpAndSettle();
 
       expect(find.text('2'), findsOneWidget);
 
       // Now decrement button should be enabled
-      final enabledDecrementButton =
-          tester.widget<IconButton>(find.byKey(const Key('quantity_decrement_button')));
+      final enabledDecrementButton = tester.widget<IconButton>(
+          find.byKey(const Key('quantity_decrement_button')));
       expect(enabledDecrementButton.onPressed, isNotNull);
 
       // Decrement back to 1
@@ -82,7 +97,8 @@ void main() {
       expect(find.text('1'), findsOneWidget);
     });
 
-    testWidgets('dispatches InventoryItemAdded when form is valid',
+    testWidgets(
+        'calls repository.add and refreshes inventory when form is valid',
         (tester) async {
       await tester.pumpWidget(buildTestableWidget());
 
@@ -106,35 +122,38 @@ void main() {
       final saveBtn = find.byKey(const Key('save_item_button'));
       await tester.ensureVisible(saveBtn);
       await tester.tap(saveBtn);
-      await tester.pump();
+      await tester.pumpAndSettle();
 
-      // Verify event was dispatched with correct name, quantity, and notes
+      // Verify repository.add was called
       verify(
-        () => inventoryBloc.add(
+        () => repository.add(
           any(
-            that: isA<InventoryItemAdded>()
+            that: isA<PantryItem>()
                 .having(
-                  (e) => e.item.name,
+                  (e) => e.name,
                   'name',
                   'Organic Strawberries',
                 )
                 .having(
-                  (e) => e.item.quantity,
+                  (e) => e.quantity,
                   'quantity',
                   2,
                 )
                 .having(
-                  (e) => e.item.notes,
+                  (e) => e.notes,
                   'notes',
                   'Buy more if on sale',
                 ),
           ),
         ),
       ).called(1);
+
+      // Verify inventory was refreshed
+      verify(() => inventoryBloc.add(const InventoryStarted())).called(1);
     });
 
     testWidgets(
-        'pre-populates existing item and dispatches InventoryItemUpdated on edit',
+        'pre-populates existing item and calls repository.update on edit',
         (tester) async {
       final existingItem = PantryItem(
         id: 7,
@@ -168,36 +187,38 @@ void main() {
       final saveBtn = find.byKey(const Key('save_item_button'));
       await tester.ensureVisible(saveBtn);
       await tester.tap(saveBtn);
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       // Verify update event
       verify(
-        () => inventoryBloc.add(
+        () => repository.update(
           any(
-            that: isA<InventoryItemUpdated>()
+            that: isA<PantryItem>()
                 .having(
-                  (e) => e.item.id,
+                  (e) => e.id,
                   'id',
                   7,
                 )
                 .having(
-                  (e) => e.item.name,
+                  (e) => e.name,
                   'name',
                   'Oat Milk',
                 )
                 .having(
-                  (e) => e.item.quantity,
+                  (e) => e.quantity,
                   'quantity',
                   3,
                 )
                 .having(
-                  (e) => e.item.notes,
+                  (e) => e.notes,
                   'notes',
                   'Unopened backup',
                 ),
           ),
         ),
       ).called(1);
+
+      verify(() => inventoryBloc.add(const InventoryStarted())).called(1);
     });
   });
 }

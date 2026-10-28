@@ -7,37 +7,11 @@ import '../../domain/models/pantry_category.dart';
 import '../../domain/models/pantry_item.dart';
 import '../bloc/inventory_bloc.dart';
 
-class InventoryPage extends StatefulWidget {
+class InventoryPage extends StatelessWidget {
   const InventoryPage({super.key});
 
   @override
-  State<InventoryPage> createState() => _InventoryPageState();
-}
-
-class _InventoryPageState extends State<InventoryPage> {
-  late final TextEditingController _searchController;
-
-  @override
-  void initState() {
-    super.initState();
-    _searchController = TextEditingController();
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  void _clearAllFilters(BuildContext context) {
-    _searchController.clear();
-    context.read<InventoryBloc>().add(const InventoryFiltersCleared());
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Pantry Pal'),
@@ -51,7 +25,9 @@ class _InventoryPageState extends State<InventoryPage> {
                 key: const Key('clear_filters_appbar_button'),
                 icon: const Icon(Icons.filter_alt_off),
                 tooltip: 'Clear filters',
-                onPressed: () => _clearAllFilters(context),
+                onPressed: () => context
+                    .read<InventoryBloc>()
+                    .add(const InventoryFiltersCleared()),
               );
             },
           ),
@@ -59,42 +35,10 @@ class _InventoryPageState extends State<InventoryPage> {
       ),
       body: Column(
         children: [
-          // Search Field
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-            child: TextField(
-              key: const Key('inventory_search_field'),
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Search items...',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                        key: const Key('clear_search_button'),
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          _searchController.clear();
-                          context
-                              .read<InventoryBloc>()
-                              .add(const InventorySearchChanged(''));
-                          setState(() {});
-                        },
-                      )
-                    : null,
-                filled: true,
-                isDense: true,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-              onChanged: (query) {
-                setState(() {});
-                context
-                    .read<InventoryBloc>()
-                    .add(InventorySearchChanged(query));
-              },
-            ),
+          // Isolated Search Bar (owns TextEditingController lifecycle only)
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 8, 16, 4),
+            child: _InventorySearchBar(),
           ),
 
           // Horizontally Scrollable Filter Chips
@@ -120,7 +64,9 @@ class _InventoryPageState extends State<InventoryPage> {
                             size: 16,
                           ),
                           label: const Text('Clear all'),
-                          onPressed: () => _clearAllFilters(context),
+                          onPressed: () => context
+                              .read<InventoryBloc>()
+                              .add(const InventoryFiltersCleared()),
                         ),
                       ),
                     ],
@@ -175,7 +121,7 @@ class _InventoryPageState extends State<InventoryPage> {
                     SnackBar(
                       content:
                           Text(state.errorMessage ?? 'An error occurred'),
-                      backgroundColor: theme.colorScheme.error,
+                      backgroundColor: Theme.of(context).colorScheme.error,
                     ),
                   );
                 }
@@ -194,7 +140,9 @@ class _InventoryPageState extends State<InventoryPage> {
                       children: [
                         Text(
                           state.errorMessage ?? 'Something went wrong',
-                          style: TextStyle(color: theme.colorScheme.error),
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.error,
+                          ),
                         ),
                         const SizedBox(height: 12),
                         FilledButton.tonal(
@@ -211,6 +159,7 @@ class _InventoryPageState extends State<InventoryPage> {
                 if (state.items.isEmpty) {
                   // Distinct State 1: Total pantry is empty
                   if (state.isPantryEmpty) {
+                    final theme = Theme.of(context);
                     return Center(
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
@@ -239,6 +188,7 @@ class _InventoryPageState extends State<InventoryPage> {
                   }
 
                   // Distinct State 2: Filters active, no results
+                  final theme = Theme.of(context);
                   return Center(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
@@ -257,7 +207,9 @@ class _InventoryPageState extends State<InventoryPage> {
                         const SizedBox(height: 8),
                         FilledButton.tonal(
                           key: const Key('clear_filters_empty_button'),
-                          onPressed: () => _clearAllFilters(context),
+                          onPressed: () => context
+                              .read<InventoryBloc>()
+                              .add(const InventoryFiltersCleared()),
                           child: const Text('Clear filters'),
                         ),
                       ],
@@ -281,6 +233,80 @@ class _InventoryPageState extends State<InventoryPage> {
         key: const Key('add_item_fab'),
         onPressed: () => context.push('/item/new'),
         child: const Icon(Icons.add),
+      ),
+    );
+  }
+}
+
+/// Small isolated StatefulWidget whose sole responsibility is managing the lifecycle
+/// of a [TextEditingController] and disposing it. Holds no business or UI state.
+class _InventorySearchBar extends StatefulWidget {
+  const _InventorySearchBar();
+
+  @override
+  State<_InventorySearchBar> createState() => _InventorySearchBarState();
+}
+
+class _InventorySearchBarState extends State<_InventorySearchBar> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<InventoryBloc, InventoryState>(
+      listenWhen: (prev, curr) =>
+          prev.searchQuery != curr.searchQuery && curr.searchQuery.isEmpty,
+      listener: (context, state) {
+        if (_controller.text.isNotEmpty) {
+          _controller.clear();
+        }
+      },
+      child: BlocSelector<InventoryBloc, InventoryState, bool>(
+        selector: (state) => state.searchQuery.isNotEmpty,
+        builder: (context, hasQuery) {
+          return TextField(
+            key: const Key('inventory_search_field'),
+            controller: _controller,
+            decoration: InputDecoration(
+              hintText: 'Search items...',
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon: hasQuery
+                  ? IconButton(
+                      key: const Key('clear_search_button'),
+                      icon: const Icon(Icons.clear),
+                      onPressed: () {
+                        _controller.clear();
+                        context
+                            .read<InventoryBloc>()
+                            .add(const InventorySearchChanged(''));
+                      },
+                    )
+                  : null,
+              filled: true,
+              isDense: true,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+            ),
+            onChanged: (query) {
+              context
+                  .read<InventoryBloc>()
+                  .add(InventorySearchChanged(query));
+            },
+          );
+        },
       ),
     );
   }

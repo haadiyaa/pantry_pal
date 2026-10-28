@@ -5,9 +5,12 @@ import 'package:intl/intl.dart';
 
 import '../../domain/models/pantry_category.dart';
 import '../../domain/models/pantry_item.dart';
+import '../../domain/repositories/pantry_repository.dart';
 import '../bloc/inventory_bloc.dart';
+import '../cubit/item_form_cubit.dart';
+import '../cubit/item_form_state.dart';
 
-class ItemFormPage extends StatefulWidget {
+class ItemFormPage extends StatelessWidget {
   const ItemFormPage({
     super.key,
     this.itemId,
@@ -18,258 +21,233 @@ class ItemFormPage extends StatefulWidget {
   final PantryItem? initialItem;
 
   @override
-  State<ItemFormPage> createState() => _ItemFormPageState();
-}
-
-class _ItemFormPageState extends State<ItemFormPage> {
-  final _formKey = GlobalKey<FormState>();
-
-  late final TextEditingController _nameController;
-  late final TextEditingController _barcodeController;
-  late final TextEditingController _notesController;
-
-  late PantryCategory _category;
-  late int _quantity;
-  late DateTime _expiryDate;
-  PantryItem? _existingItem;
-  bool _isSaving = false;
-
-  bool get _isEditing => _existingItem != null;
-
-  @override
-  void initState() {
-    super.initState();
-
-    _existingItem = widget.initialItem;
-    if (_existingItem == null && widget.itemId != null) {
+  Widget build(BuildContext context) {
+    PantryItem? resolvedItem = initialItem;
+    if (resolvedItem == null && itemId != null) {
       final items = context.read<InventoryBloc>().state.items;
       try {
-        _existingItem = items.firstWhere((i) => i.id == widget.itemId);
+        resolvedItem = items.firstWhere((i) => i.id == itemId);
       } catch (_) {
-        _existingItem = null;
+        resolvedItem = null;
       }
     }
 
-    _nameController = TextEditingController(text: _existingItem?.name ?? '');
-    _barcodeController =
-        TextEditingController(text: _existingItem?.barcode ?? '');
-    _notesController = TextEditingController(text: _existingItem?.notes ?? '');
-    _category = PantryCategory.fromString(_existingItem?.category);
-    _quantity = _existingItem?.quantity ?? 1;
-    _expiryDate = _existingItem?.expiryDate ??
-        DateTime.now().add(const Duration(days: 7));
+    return BlocProvider(
+      create: (context) => ItemFormCubit(
+        repository: context.read<PantryRepository>(),
+        initialItem: resolvedItem,
+      ),
+      child: const _ItemFormView(),
+    );
   }
+}
 
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _barcodeController.dispose();
-    _notesController.dispose();
-    super.dispose();
-  }
+class _ItemFormView extends StatelessWidget {
+  const _ItemFormView();
 
-  Future<void> _selectExpiryDate() async {
+  Future<void> _selectExpiryDate(
+    BuildContext context,
+    DateTime currentExpiry,
+  ) async {
     final picked = await showDatePicker(
       context: context,
-      initialDate: _expiryDate,
+      initialDate: currentExpiry,
       firstDate: DateTime.now().subtract(const Duration(days: 365)),
       lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
     );
-    if (picked != null) {
-      setState(() {
-        _expiryDate = picked;
-      });
-    }
-  }
-
-  void _save() {
-    if (!_formKey.currentState!.validate()) return;
-    if (_quantity < 1) return;
-
-    setState(() => _isSaving = true);
-
-    final name = _nameController.text.trim();
-    final barcode = _barcodeController.text.trim();
-    final notes = _notesController.text.trim();
-
-    if (_isEditing) {
-      final updated = _existingItem!.copyWith(
-        name: name,
-        quantity: _quantity,
-        category: _category.label,
-        expiryDate: _expiryDate,
-        barcode: barcode.isEmpty ? null : barcode,
-        notes: notes.isEmpty ? null : notes,
-      );
-      context.read<InventoryBloc>().add(InventoryItemUpdated(updated));
-    } else {
-      final newItem = PantryItem(
-        name: name,
-        quantity: _quantity,
-        category: _category.label,
-        expiryDate: _expiryDate,
-        barcode: barcode.isEmpty ? null : barcode,
-        notes: notes.isEmpty ? null : notes,
-        addedAt: DateTime.now(),
-      );
-      context.read<InventoryBloc>().add(InventoryItemAdded(newItem));
-    }
-
-    if (mounted) {
-      try {
-        context.pop();
-      } catch (_) {
-        Navigator.of(context).maybePop();
-      }
+    if (picked != null && context.mounted) {
+      context.read<ItemFormCubit>().expiryDateChanged(picked);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final cubit = context.read<ItemFormCubit>();
+    final isEditing = cubit.state.isEditing;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_isEditing ? 'Edit Item' : 'Add Item'),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
+    return BlocListener<ItemFormCubit, ItemFormState>(
+      listenWhen: (prev, curr) => prev.status != curr.status,
+      listener: (context, state) {
+        if (state.status == ItemFormStatus.success) {
+          context.read<InventoryBloc>().add(const InventoryStarted());
+          if (context.mounted) {
+            try {
+              context.pop();
+            } catch (_) {
+              Navigator.of(context).maybePop();
+            }
+          }
+        } else if (state.status == ItemFormStatus.failure) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.errorMessage ?? 'Failed to save item'),
+              backgroundColor: theme.colorScheme.error,
+            ),
+          );
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(isEditing ? 'Edit Item' : 'Add Item'),
+        ),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // Item Name Field
-              TextFormField(
-                key: const Key('item_name_field'),
-                controller: _nameController,
-                autofocus: !_isEditing,
-                textCapitalization: TextCapitalization.sentences,
-                decoration: const InputDecoration(
-                  labelText: 'Item name *',
-                  hintText: 'e.g. Greek Yogurt',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.shopping_bag_outlined),
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Item name is required';
-                  }
-                  return null;
+              BlocSelector<ItemFormCubit, ItemFormState, String?>(
+                selector: (state) => state.nameError,
+                builder: (context, nameError) {
+                  return TextFormField(
+                    key: const Key('item_name_field'),
+                    initialValue: cubit.state.name,
+                    autofocus: !isEditing,
+                    textCapitalization: TextCapitalization.sentences,
+                    decoration: InputDecoration(
+                      labelText: 'Item name *',
+                      hintText: 'e.g. Greek Yogurt',
+                      border: const OutlineInputBorder(),
+                      prefixIcon: const Icon(Icons.shopping_bag_outlined),
+                      errorText: nameError,
+                    ),
+                    onChanged: cubit.nameChanged,
+                  );
                 },
               ),
               const SizedBox(height: 16),
 
               // Category Selector
-              DropdownButtonFormField<PantryCategory>(
-                key: const Key('item_category_field'),
-                initialValue: _category,
-                decoration: const InputDecoration(
-                  labelText: 'Category',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.category_outlined),
-                ),
-                items: PantryCategory.values.map((cat) {
-                  return DropdownMenuItem<PantryCategory>(
-                    value: cat,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(cat.icon, size: 20),
-                        const SizedBox(width: 8),
-                        Text(cat.label),
-                      ],
+              BlocSelector<ItemFormCubit, ItemFormState, PantryCategory>(
+                selector: (state) => state.category,
+                builder: (context, category) {
+                  return DropdownButtonFormField<PantryCategory>(
+                    key: const Key('item_category_field'),
+                    initialValue: category,
+                    decoration: const InputDecoration(
+                      labelText: 'Category',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.category_outlined),
                     ),
+                    items: PantryCategory.values.map((cat) {
+                      return DropdownMenuItem<PantryCategory>(
+                        value: cat,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(cat.icon, size: 20),
+                            const SizedBox(width: 8),
+                            Text(cat.label),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: (cat) {
+                      if (cat != null) {
+                        cubit.categoryChanged(cat);
+                      }
+                    },
                   );
-                }).toList(),
-                onChanged: (cat) {
-                  if (cat != null) {
-                    setState(() => _category = cat);
-                  }
                 },
               ),
               const SizedBox(height: 16),
 
               // Quantity Stepper
-              Card.outlined(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Quantity', style: theme.textTheme.titleMedium),
-                          Text(
-                            'Must be at least 1',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
+              BlocSelector<ItemFormCubit, ItemFormState, int>(
+                selector: (state) => state.quantity,
+                builder: (context, quantity) {
+                  return Card.outlined(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
                       ),
-                      Row(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          IconButton.outlined(
-                            key: const Key('quantity_decrement_button'),
-                            icon: const Icon(Icons.remove),
-                            onPressed: _quantity > 1
-                                ? () => setState(() => _quantity--)
-                                : null,
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: Text(
-                              '$_quantity',
-                              key: const Key('quantity_value_text'),
-                              style: theme.textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.bold,
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Quantity',
+                                style: theme.textTheme.titleMedium,
                               ),
-                            ),
+                              Text(
+                                'Must be at least 1',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
                           ),
-                          IconButton.outlined(
-                            key: const Key('quantity_increment_button'),
-                            icon: const Icon(Icons.add),
-                            onPressed: () => setState(() => _quantity++),
+                          Row(
+                            children: [
+                              IconButton.outlined(
+                                key: const Key('quantity_decrement_button'),
+                                icon: const Icon(Icons.remove),
+                                onPressed: quantity > 1
+                                    ? cubit.quantityDecremented
+                                    : null,
+                              ),
+                              Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 16),
+                                child: Text(
+                                  '$quantity',
+                                  key: const Key('quantity_value_text'),
+                                  style: theme.textTheme.titleLarge?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              IconButton.outlined(
+                                key: const Key('quantity_increment_button'),
+                                icon: const Icon(Icons.add),
+                                onPressed: cubit.quantityIncremented,
+                              ),
+                            ],
                           ),
                         ],
                       ),
-                    ],
-                  ),
-                ),
+                    ),
+                  );
+                },
               ),
               const SizedBox(height: 16),
 
               // Expiry Date Picker Card
-              Card.outlined(
-                child: ListTile(
-                  leading: const Icon(Icons.calendar_today_outlined),
-                  title: const Text('Expiry date'),
-                  subtitle: Text(
-                    DateFormat.yMMMd().format(_expiryDate),
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: theme.colorScheme.primary,
+              BlocSelector<ItemFormCubit, ItemFormState, DateTime>(
+                selector: (state) => state.expiryDate,
+                builder: (context, expiryDate) {
+                  return Card.outlined(
+                    child: ListTile(
+                      leading: const Icon(Icons.calendar_today_outlined),
+                      title: const Text('Expiry date'),
+                      subtitle: Text(
+                        DateFormat.yMMMd().format(expiryDate),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                      trailing: TextButton.icon(
+                        icon: const Icon(Icons.edit_calendar),
+                        label: const Text('Change'),
+                        onPressed: () =>
+                            _selectExpiryDate(context, expiryDate),
+                      ),
+                      onTap: () => _selectExpiryDate(context, expiryDate),
                     ),
-                  ),
-                  trailing: TextButton.icon(
-                    icon: const Icon(Icons.edit_calendar),
-                    label: const Text('Change'),
-                    onPressed: _selectExpiryDate,
-                  ),
-                  onTap: _selectExpiryDate,
-                ),
+                  );
+                },
               ),
               const SizedBox(height: 16),
 
-              // Optional Notes Field (Added in schema v2)
+              // Optional Notes Field
               TextFormField(
                 key: const Key('item_notes_field'),
-                controller: _notesController,
+                initialValue: cubit.state.notes,
                 maxLines: 3,
                 textCapitalization: TextCapitalization.sentences,
                 decoration: const InputDecoration(
@@ -278,13 +256,14 @@ class _ItemFormPageState extends State<ItemFormPage> {
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.notes_outlined),
                 ),
+                onChanged: cubit.notesChanged,
               ),
               const SizedBox(height: 16),
 
               // Optional Barcode Field
               TextFormField(
                 key: const Key('item_barcode_field'),
-                controller: _barcodeController,
+                initialValue: cubit.state.barcode,
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(
                   labelText: 'Barcode (optional)',
@@ -292,26 +271,38 @@ class _ItemFormPageState extends State<ItemFormPage> {
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.qr_code_scanner_outlined),
                 ),
+                onChanged: cubit.barcodeChanged,
               ),
               const SizedBox(height: 24),
 
-              // Save Button with loading state
-              FilledButton(
-                key: const Key('save_item_button'),
-                onPressed: _isSaving ? null : _save,
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+              // Save Button with loading state via BlocSelector
+              BlocSelector<ItemFormCubit, ItemFormState,
+                  (bool isSubmitting, bool isEditing)>(
+                selector: (state) => (
+                  state.status == ItemFormStatus.submitting,
+                  state.isEditing
                 ),
-                child: _isSaving
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Text(
-                        _isEditing ? 'Save Changes' : 'Add Item',
-                        style: const TextStyle(fontSize: 16),
-                      ),
+                builder: (context, data) {
+                  final (isSubmitting, isEditingState) = data;
+
+                  return FilledButton(
+                    key: const Key('save_item_button'),
+                    onPressed: isSubmitting ? null : cubit.submit,
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                    child: isSubmitting
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Text(
+                            isEditingState ? 'Save Changes' : 'Add Item',
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                  );
+                },
               ),
             ],
           ),
