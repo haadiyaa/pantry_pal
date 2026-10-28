@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'core/database/app_database.dart';
+import 'core/router/app_router.dart';
 import 'features/inventory/data/repositories/sqlite_pantry_repository.dart';
 import 'features/inventory/domain/repositories/pantry_repository.dart';
 import 'features/inventory/presentation/bloc/inventory_bloc.dart';
-import 'features/inventory/presentation/pages/inventory_page.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,7 +27,7 @@ class PantryPalApp extends StatelessWidget {
       value: repository,
       child: BlocProvider(
         create: (_) => InventoryBloc(repository)..add(const InventoryStarted()),
-        child: MaterialApp(
+        child: MaterialApp.router(
           title: 'Pantry Pal',
           debugShowCheckedModeBanner: false,
           theme: ThemeData(
@@ -39,7 +39,7 @@ class PantryPalApp extends StatelessWidget {
             colorSchemeSeed: Colors.green,
             brightness: Brightness.dark,
           ),
-          home: const InventoryPage(),
+          routerConfig: appRouter,
         ),
       ),
     );

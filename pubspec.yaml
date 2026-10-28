@@ -39,6 +39,7 @@ dependencies:
   sqflite: ^2.4.5
   path: ^1.9.1
   intl: ^0.20.3
+  go_router: ^18.1.1
 
 dev_dependencies:
   flutter_test:

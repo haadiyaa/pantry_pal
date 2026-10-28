@@ -1,62 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../domain/models/pantry_category.dart';
 import '../../domain/models/pantry_item.dart';
 import '../bloc/inventory_bloc.dart';
 
 class InventoryPage extends StatelessWidget {
   const InventoryPage({super.key});
-
-  Future<void> _addItem(BuildContext context) async {
-    final bloc = context.read<InventoryBloc>();
-    final name = await _askName(context);
-    if (name == null || name.trim().isEmpty || !context.mounted) return;
-
-    final expiry = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now().add(const Duration(days: 7)),
-      firstDate: DateTime.now().subtract(const Duration(days: 30)),
-      lastDate: DateTime.now().add(const Duration(days: 365 * 3)),
-    );
-    if (expiry == null) return;
-
-    bloc.add(
-      InventoryItemAdded(
-        PantryItem(
-          name: name.trim(),
-          expiryDate: expiry,
-          addedAt: DateTime.now(),
-        ),
-      ),
-    );
-  }
-
-  Future<String?> _askName(BuildContext context) {
-    final controller = TextEditingController();
-    return showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Add item'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          textCapitalization: TextCapitalization.sentences,
-          decoration: const InputDecoration(labelText: 'Name'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, controller.text),
-            child: const Text('Next'),
-          ),
-        ],
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -117,7 +69,8 @@ class InventoryPage extends StatelessWidget {
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _addItem(context),
+        key: const Key('add_item_fab'),
+        onPressed: () => context.push('/item/new'),
         child: const Icon(Icons.add),
       ),
     );
@@ -144,27 +97,65 @@ class _ItemTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final category = PantryCategory.fromString(item.category);
+
     return Dismissible(
       key: ValueKey(item.id ?? item.name),
       direction: DismissDirection.endToStart,
       background: Container(
-        color: Theme.of(context).colorScheme.errorContainer,
+        color: theme.colorScheme.errorContainer,
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 16),
-        child: const Icon(Icons.delete),
+        child: Icon(Icons.delete, color: theme.colorScheme.onErrorContainer),
       ),
       onDismissed: (_) {
         if (item.id != null) {
-          context.read<InventoryBloc>().add(InventoryItemDeleted(item.id!));
+          final deletedItem = item;
+          context.read<InventoryBloc>().add(InventoryItemDeleted(deletedItem.id!));
+          ScaffoldMessenger.of(context).clearSnackBars();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Deleted "${deletedItem.name}"'),
+              action: SnackBarAction(
+                label: 'Undo',
+                onPressed: () {
+                  context
+                      .read<InventoryBloc>()
+                      .add(InventoryItemAdded(deletedItem));
+                },
+              ),
+            ),
+          );
         }
       },
       child: ListTile(
-        leading: CircleAvatar(backgroundColor: _color(context), radius: 8),
-        title: Text(item.name),
-        subtitle: Text(
-          '${DateFormat.yMMMd().format(item.expiryDate)} • $_label',
+        leading: Badge(
+          backgroundColor: _color(context),
+          smallSize: 10,
+          child: CircleAvatar(
+            backgroundColor: theme.colorScheme.surfaceContainerHighest,
+            child: Icon(
+              category.icon,
+              size: 20,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
         ),
-        trailing: Text('x${item.quantity}'),
+        title: Text(
+          item.name,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+        subtitle: Text(
+          '${category.label} • ${DateFormat.yMMMd().format(item.expiryDate)} • $_label',
+        ),
+        trailing: Text(
+          'x${item.quantity}',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        onTap: () => context.push('/item/${item.id}', extra: item),
       ),
     );
   }

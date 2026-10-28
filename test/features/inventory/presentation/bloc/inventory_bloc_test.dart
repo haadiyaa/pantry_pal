@@ -181,6 +181,29 @@ void main() {
         ],
       );
     });
+
+    group('Undo delete flow', () {
+      blocTest<InventoryBloc, InventoryState>(
+        're-inserts deleted item when undo action is triggered',
+        build: () {
+          when(() => repository.add(sampleItem)).thenAnswer((_) async => 1);
+          when(() => repository.getAll()).thenAnswer((_) async => [sampleItem]);
+          return InventoryBloc(repository);
+        },
+        seed: () => const InventoryState(
+          status: InventoryStatus.success,
+          items: [],
+        ),
+        act: (bloc) => bloc.add(InventoryItemAdded(sampleItem)),
+        expect: () => [
+          InventoryState(status: InventoryStatus.success, items: [sampleItem]),
+        ],
+        verify: (_) {
+          verify(() => repository.add(sampleItem)).called(1);
+          verify(() => repository.getAll()).called(1);
+        },
+      );
+    });
   });
 }
 
