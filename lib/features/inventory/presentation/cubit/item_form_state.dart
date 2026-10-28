@@ -95,3 +95,4 @@ class ItemFormState extends Equatable {
         errorMessage,
       ];
 }
+

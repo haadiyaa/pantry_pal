@@ -38,6 +38,19 @@ class SqlitePantryRepository implements PantryRepository {
   }
 
   @override
+  Future<PantryItem?> getByBarcode(String barcode) async {
+    final db = await _appDb.database;
+    final rows = await db.query(
+      _table,
+      where: 'barcode = ?',
+      whereArgs: [barcode],
+      limit: 1,
+    );
+    if (rows.isEmpty) return null;
+    return PantryItem.fromMap(rows.first);
+  }
+
+  @override
   Future<List<PantryItem>> getExpiringWithin(int days) async {
     final db = await _appDb.database;
     final now = DateTime.now();

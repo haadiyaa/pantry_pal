@@ -5,6 +5,7 @@ import '../models/pantry_item.dart';
 abstract class PantryRepository {
   Future<List<PantryItem>> getAll();
   Future<PantryItem?> getById(int id);
+  Future<PantryItem?> getByBarcode(String barcode);
   Future<List<PantryItem>> getExpiringWithin(int days);
   Future<List<PantryItem>> search({
     String? query,

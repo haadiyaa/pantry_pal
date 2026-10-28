@@ -229,10 +229,26 @@ class InventoryPage extends StatelessWidget {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        key: const Key('add_item_fab'),
-        onPressed: () => context.push('/item/new'),
-        child: const Icon(Icons.add),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          FloatingActionButton.small(
+            heroTag: 'scan_fab',
+            key: const Key('scan_barcode_fab'),
+            tooltip: 'Scan barcode',
+            onPressed: () => context.push('/scan'),
+            child: const Icon(Icons.qr_code_scanner),
+          ),
+          const SizedBox(height: 12),
+          FloatingActionButton(
+            heroTag: 'add_fab',
+            key: const Key('add_item_fab'),
+            tooltip: 'Add item manually',
+            onPressed: () => context.push('/item/new'),
+            child: const Icon(Icons.add),
+          ),
+        ],
       ),
     );
   }
