@@ -49,7 +49,7 @@ class ItemFormState extends Equatable {
   final ItemFormStatus status;
   final String? errorMessage;
 
-  bool get isEditing => initialItem != null;
+  bool get isEditing => initialItem?.id != null;
 
   ItemFormState copyWith({
     PantryItem? initialItem,

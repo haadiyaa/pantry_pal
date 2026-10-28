@@ -59,6 +59,25 @@ void main() {
       expect(cubit.state.expiryDate, testExpiry);
     });
 
+    test('initial state for scanned/prefilled item with null id sets isEditing false', () {
+      final prefilledItem = PantryItem(
+        name: 'Farm Fresh Sahi Plain Yoghurt',
+        category: 'Dairy',
+        barcode: '8904083303077',
+        notes: 'Brand: Milky Mist',
+        expiryDate: testExpiry,
+        addedAt: DateTime(2026, 1, 1),
+      );
+      final cubit = ItemFormCubit(
+        repository: repository,
+        initialItem: prefilledItem,
+      );
+      expect(cubit.state.isEditing, isFalse);
+      expect(cubit.state.name, 'Farm Fresh Sahi Plain Yoghurt');
+      expect(cubit.state.barcode, '8904083303077');
+      expect(cubit.state.category, PantryCategory.dairy);
+    });
+
     blocTest<ItemFormCubit, ItemFormState>(
       'nameChanged updates name and clears nameError if non-empty',
       build: () => ItemFormCubit(repository: repository),
