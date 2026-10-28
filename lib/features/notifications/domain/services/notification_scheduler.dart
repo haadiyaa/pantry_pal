@@ -18,6 +18,9 @@ abstract interface class NotificationScheduler {
   /// Schedules a list of [PlannedNotification]s using inexact idle-wake alarms.
   Future<void> schedule(List<PlannedNotification> notifications);
 
+  /// Schedules a single notification without canceling others.
+  Future<void> scheduleSingle(PlannedNotification notification);
+
   /// Shows an immediate test notification to verify audio/visual alerts.
   Future<void> showTestNotification(PlannedNotification notification);
 

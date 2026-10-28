@@ -43,6 +43,7 @@ void main() {
     when(() => settingsRepo.saveSettings(any())).thenAnswer((_) async {});
     when(() => scheduler.checkPermission()).thenAnswer((_) async => false);
     when(() => scheduler.cancelAll()).thenAnswer((_) async {});
+    when(() => scheduler.scheduleSingle(any())).thenAnswer((_) async {});
     when(() => syncService.syncNotifications()).thenAnswer((_) async {});
   });
 
@@ -235,6 +236,25 @@ void main() {
       ],
       verify: (_) {
         verify(() => scheduler.showTestNotification(any())).called(1);
+      },
+    );
+
+    blocTest<NotificationSettingsCubit, NotificationSettingsState>(
+      'scheduleOneMinuteTestReminder calls scheduler scheduleSingle',
+      build: () {
+        when(() => scheduler.scheduleSingle(any())).thenAnswer((_) async {});
+        return buildCubit();
+      },
+      act: (cubit) => cubit.scheduleOneMinuteTestReminder(),
+      expect: () => [
+        isA<NotificationSettingsState>().having(
+          (s) => s.testNotificationSent,
+          'testNotificationSent',
+          isTrue,
+        ),
+      ],
+      verify: (_) {
+        verify(() => scheduler.scheduleSingle(any())).called(1);
       },
     );
   });

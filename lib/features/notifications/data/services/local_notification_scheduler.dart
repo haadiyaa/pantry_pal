@@ -98,12 +98,17 @@ class LocalNotificationScheduler implements NotificationScheduler {
     await cancelAll();
 
     final nowTz = tz.TZDateTime.now(tz.local);
+    debugPrint('[NotificationScheduler] Current local time: $nowTz');
+    debugPrint('[NotificationScheduler] Reprogramming ${notifications.length} planned notifications...');
 
     for (final item in notifications) {
       final scheduledTz = tz.TZDateTime.from(item.scheduledDate, tz.local);
 
       // Guard: only schedule future dates
-      if (!scheduledTz.isAfter(nowTz)) continue;
+      if (!scheduledTz.isAfter(nowTz)) {
+        debugPrint('[NotificationScheduler] Skipping past date for id ${item.id}: $scheduledTz (now is $nowTz)');
+        continue;
+      }
 
       try {
         await _plugin.zonedSchedule(
@@ -115,9 +120,29 @@ class LocalNotificationScheduler implements NotificationScheduler {
           androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
           payload: item.payload,
         );
+        debugPrint('[NotificationScheduler] Scheduled [${item.id}] "${item.title}: ${item.body}" at $scheduledTz');
       } catch (e) {
         debugPrint('Failed to schedule notification ${item.id}: $e');
       }
+    }
+  }
+
+  @override
+  Future<void> scheduleSingle(PlannedNotification notification) async {
+    final scheduledTz = tz.TZDateTime.from(notification.scheduledDate, tz.local);
+    try {
+      await _plugin.zonedSchedule(
+        id: notification.id,
+        title: notification.title,
+        body: notification.body,
+        scheduledDate: scheduledTz,
+        notificationDetails: _notificationDetails,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        payload: notification.payload,
+      );
+      debugPrint('[NotificationScheduler] Scheduled single notification [${notification.id}] at $scheduledTz');
+    } catch (e) {
+      debugPrint('Failed to schedule single notification: $e');
     }
   }
 

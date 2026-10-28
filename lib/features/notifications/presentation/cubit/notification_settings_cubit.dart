@@ -114,6 +114,24 @@ class NotificationSettingsCubit extends Cubit<NotificationSettingsState> {
     }
   }
 
+  Future<void> scheduleOneMinuteTestReminder() async {
+    try {
+      final targetTime = DateTime.now().add(const Duration(minutes: 1));
+      final testNotification = PlannedNotification(
+        id: 999998,
+        title: 'Expiry Alert (Scheduled Test)',
+        body: 'Scheduled reminder succeeded! Alarms and background delivery are working on your device.',
+        scheduledDate: targetTime,
+        payload: 'digest:expiring_soon',
+      );
+
+      await scheduler.scheduleSingle(testNotification);
+      emit(state.copyWith(testNotificationSent: true));
+    } catch (e) {
+      emit(state.copyWith(errorMessage: () => 'Failed to schedule test reminder: $e'));
+    }
+  }
+
   void resetTestNotificationSent() {
     emit(state.copyWith(testNotificationSent: false));
   }

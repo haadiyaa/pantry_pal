@@ -183,13 +183,26 @@ class NotificationSettingsPage extends StatelessWidget {
               ),
               const Divider(),
 
-              // Test Notification Button
+              // Test Notification Buttons
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                child: OutlinedButton.icon(
-                  icon: const Icon(Icons.notification_add_outlined),
-                  label: const Text('Send Test Notification'),
-                  onPressed: cubit.sendTestNotification,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    FilledButton.tonalIcon(
+                      icon: const Icon(Icons.timer_outlined),
+                      label: const Text('Schedule 1-Minute Test Reminder'),
+                      onPressed: settings.notificationsEnabled
+                          ? cubit.scheduleOneMinuteTestReminder
+                          : null,
+                    ),
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      icon: const Icon(Icons.notification_add_outlined),
+                      label: const Text('Send Instant Test Notification'),
+                      onPressed: cubit.sendTestNotification,
+                    ),
+                  ],
                 ),
               ),
             ],
