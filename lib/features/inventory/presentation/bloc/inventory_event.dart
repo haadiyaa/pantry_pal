@@ -35,3 +35,26 @@ final class InventoryItemDeleted extends InventoryEvent {
   List<Object?> get props => [id];
 }
 
+final class InventorySearchChanged extends InventoryEvent {
+  const InventorySearchChanged(this.query);
+  final String query;
+
+  @override
+  List<Object?> get props => [query];
+}
+
+final class InventoryCategoryToggled extends InventoryEvent {
+  const InventoryCategoryToggled(this.category);
+  final String category;
+
+  @override
+  List<Object?> get props => [category];
+}
+
+final class InventoryExpiringFilterToggled extends InventoryEvent {
+  const InventoryExpiringFilterToggled();
+}
+
+final class InventoryFiltersCleared extends InventoryEvent {
+  const InventoryFiltersCleared();
+}

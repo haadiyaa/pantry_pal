@@ -26,6 +26,7 @@ class _ItemFormPageState extends State<ItemFormPage> {
 
   late final TextEditingController _nameController;
   late final TextEditingController _barcodeController;
+  late final TextEditingController _notesController;
 
   late PantryCategory _category;
   late int _quantity;
@@ -52,6 +53,7 @@ class _ItemFormPageState extends State<ItemFormPage> {
     _nameController = TextEditingController(text: _existingItem?.name ?? '');
     _barcodeController =
         TextEditingController(text: _existingItem?.barcode ?? '');
+    _notesController = TextEditingController(text: _existingItem?.notes ?? '');
     _category = PantryCategory.fromString(_existingItem?.category);
     _quantity = _existingItem?.quantity ?? 1;
     _expiryDate = _existingItem?.expiryDate ??
@@ -62,6 +64,7 @@ class _ItemFormPageState extends State<ItemFormPage> {
   void dispose() {
     _nameController.dispose();
     _barcodeController.dispose();
+    _notesController.dispose();
     super.dispose();
   }
 
@@ -87,6 +90,7 @@ class _ItemFormPageState extends State<ItemFormPage> {
 
     final name = _nameController.text.trim();
     final barcode = _barcodeController.text.trim();
+    final notes = _notesController.text.trim();
 
     if (_isEditing) {
       final updated = _existingItem!.copyWith(
@@ -95,6 +99,7 @@ class _ItemFormPageState extends State<ItemFormPage> {
         category: _category.label,
         expiryDate: _expiryDate,
         barcode: barcode.isEmpty ? null : barcode,
+        notes: notes.isEmpty ? null : notes,
       );
       context.read<InventoryBloc>().add(InventoryItemUpdated(updated));
     } else {
@@ -104,6 +109,7 @@ class _ItemFormPageState extends State<ItemFormPage> {
         category: _category.label,
         expiryDate: _expiryDate,
         barcode: barcode.isEmpty ? null : barcode,
+        notes: notes.isEmpty ? null : notes,
         addedAt: DateTime.now(),
       );
       context.read<InventoryBloc>().add(InventoryItemAdded(newItem));
@@ -256,6 +262,21 @@ class _ItemFormPageState extends State<ItemFormPage> {
                     onPressed: _selectExpiryDate,
                   ),
                   onTap: _selectExpiryDate,
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Optional Notes Field (Added in schema v2)
+              TextFormField(
+                key: const Key('item_notes_field'),
+                controller: _notesController,
+                maxLines: 3,
+                textCapitalization: TextCapitalization.sentences,
+                decoration: const InputDecoration(
+                  labelText: 'Notes (optional)',
+                  hintText: 'e.g. Opened on Monday, keep chilled',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.notes_outlined),
                 ),
               ),
               const SizedBox(height: 16),

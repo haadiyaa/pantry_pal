@@ -116,6 +116,7 @@ void main() {
         expiryDate: DateTime(2027, 1, 15),
         barcode: '1234567890',
         addedAt: DateTime(2026, 1, 1),
+        notes: 'Gluten free',
       );
 
       final map = item.toMap();
@@ -129,6 +130,7 @@ void main() {
       expect(map['expiry_date'], item.expiryDate.millisecondsSinceEpoch);
       expect(map['barcode'], '1234567890');
       expect(map['added_at'], item.addedAt.millisecondsSinceEpoch);
+      expect(map['notes'], 'Gluten free');
     });
 
     test('copyWith creates a new instance with updated fields', () {

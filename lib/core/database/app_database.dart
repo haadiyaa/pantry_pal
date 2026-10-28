@@ -2,7 +2,7 @@ import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
 /// Single access point for the SQLite database.
-/// Bump [_dbVersion] and add a step in [_onUpgrade] for every schema change.
+/// Bump [dbVersion] and add a step in [onUpgrade] for every schema change.
 class AppDatabase {
   AppDatabase({DatabaseFactory? databaseFactory, String? dbPath})
       : _factory = databaseFactory,
@@ -11,7 +11,7 @@ class AppDatabase {
   static final AppDatabase instance = AppDatabase();
 
   static const defaultDbName = 'pantry_pal.db';
-  static const dbVersion = 1;
+  static const dbVersion = 2;
 
   static const tablePantryItems = 'pantry_items';
 
@@ -54,6 +54,7 @@ class AppDatabase {
     );
   }
 
+  /// Fresh install creates the full, current (v2) schema directly.
   static Future<void> onCreate(Database db, int version) async {
     await db.execute('''
       CREATE TABLE $tablePantryItems (
@@ -63,20 +64,33 @@ class AppDatabase {
         category     TEXT    NOT NULL DEFAULT 'Other',
         expiry_date  INTEGER NOT NULL, -- epoch milliseconds
         barcode      TEXT,
-        added_at     INTEGER NOT NULL  -- epoch milliseconds
+        added_at     INTEGER NOT NULL, -- epoch milliseconds
+        notes        TEXT
       )
     ''');
     await db.execute(
       'CREATE INDEX idx_pantry_items_expiry ON $tablePantryItems (expiry_date)',
     );
+    await db.execute(
+      'CREATE INDEX idx_pantry_items_category ON $tablePantryItems (category)',
+    );
   }
 
+  /// Upgrades existing databases incrementally without data loss.
   static Future<void> onUpgrade(
     Database db,
     int oldVersion,
     int newVersion,
   ) async {
-    // Migration logic for future schema versions
+    if (oldVersion < 2) {
+      // Version 2: Add notes column and category index
+      await db.execute(
+        'ALTER TABLE $tablePantryItems ADD COLUMN notes TEXT',
+      );
+      await db.execute(
+        'CREATE INDEX idx_pantry_items_category ON $tablePantryItems (category)',
+      );
+    }
   }
 
   Future<void> close() async {

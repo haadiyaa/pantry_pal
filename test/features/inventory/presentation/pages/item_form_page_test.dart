@@ -40,6 +40,7 @@ void main() {
       final saveButton = find.byKey(const Key('save_item_button'));
       expect(saveButton, findsOneWidget);
 
+      await tester.ensureVisible(saveButton);
       await tester.tap(saveButton);
       await tester.pumpAndSettle();
 
@@ -91,33 +92,49 @@ void main() {
         'Organic Strawberries',
       );
 
+      // Fill in notes
+      await tester.enterText(
+        find.byKey(const Key('item_notes_field')),
+        'Buy more if on sale',
+      );
+
       // Increment quantity
       await tester.tap(find.byKey(const Key('quantity_increment_button')));
       await tester.pumpAndSettle();
 
       // Save form
-      await tester.tap(find.byKey(const Key('save_item_button')));
+      final saveBtn = find.byKey(const Key('save_item_button'));
+      await tester.ensureVisible(saveBtn);
+      await tester.tap(saveBtn);
       await tester.pump();
 
-      // Verify event was dispatched with correct name and quantity
+      // Verify event was dispatched with correct name, quantity, and notes
       verify(
         () => inventoryBloc.add(
           any(
-            that: isA<InventoryItemAdded>().having(
-              (e) => e.item.name,
-              'name',
-              'Organic Strawberries',
-            ).having(
-              (e) => e.item.quantity,
-              'quantity',
-              2,
-            ),
+            that: isA<InventoryItemAdded>()
+                .having(
+                  (e) => e.item.name,
+                  'name',
+                  'Organic Strawberries',
+                )
+                .having(
+                  (e) => e.item.quantity,
+                  'quantity',
+                  2,
+                )
+                .having(
+                  (e) => e.item.notes,
+                  'notes',
+                  'Buy more if on sale',
+                ),
           ),
         ),
       ).called(1);
     });
 
-    testWidgets('pre-populates existing item and dispatches InventoryItemUpdated on edit',
+    testWidgets(
+        'pre-populates existing item and dispatches InventoryItemUpdated on edit',
         (tester) async {
       final existingItem = PantryItem(
         id: 7,
@@ -127,6 +144,7 @@ void main() {
         expiryDate: DateTime(2026, 8, 15),
         barcode: '987654321',
         addedAt: DateTime(2026, 1, 1),
+        notes: 'Opened Monday',
       );
 
       await tester.pumpWidget(
@@ -136,33 +154,47 @@ void main() {
       // Check pre-populated values
       expect(find.text('Whole Milk'), findsOneWidget);
       expect(find.text('3'), findsOneWidget);
+      expect(find.text('Opened Monday'), findsOneWidget);
       expect(find.text('Edit Item'), findsOneWidget);
       expect(find.text('Save Changes'), findsOneWidget);
 
-      // Modify the name
-      await tester.enterText(find.byKey(const Key('item_name_field')), 'Oat Milk');
+      // Modify the name and notes
+      await tester.enterText(
+          find.byKey(const Key('item_name_field')), 'Oat Milk');
+      await tester.enterText(
+          find.byKey(const Key('item_notes_field')), 'Unopened backup');
 
       // Tap save
-      await tester.tap(find.byKey(const Key('save_item_button')));
+      final saveBtn = find.byKey(const Key('save_item_button'));
+      await tester.ensureVisible(saveBtn);
+      await tester.tap(saveBtn);
       await tester.pump();
 
       // Verify update event
       verify(
         () => inventoryBloc.add(
           any(
-            that: isA<InventoryItemUpdated>().having(
-              (e) => e.item.id,
-              'id',
-              7,
-            ).having(
-              (e) => e.item.name,
-              'name',
-              'Oat Milk',
-            ).having(
-              (e) => e.item.quantity,
-              'quantity',
-              3,
-            ),
+            that: isA<InventoryItemUpdated>()
+                .having(
+                  (e) => e.item.id,
+                  'id',
+                  7,
+                )
+                .having(
+                  (e) => e.item.name,
+                  'name',
+                  'Oat Milk',
+                )
+                .having(
+                  (e) => e.item.quantity,
+                  'quantity',
+                  3,
+                )
+                .having(
+                  (e) => e.item.notes,
+                  'notes',
+                  'Unopened backup',
+                ),
           ),
         ),
       ).called(1);
