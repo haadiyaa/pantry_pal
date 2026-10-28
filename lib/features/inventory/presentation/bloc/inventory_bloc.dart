@@ -91,3 +91,4 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
     }
   }
 }
+

@@ -28,3 +28,4 @@ final class InventoryState extends Equatable {
   @override
   List<Object?> get props => [status, items, errorMessage];
 }
+

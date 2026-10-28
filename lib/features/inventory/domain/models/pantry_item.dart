@@ -100,3 +100,4 @@ class PantryItem extends Equatable {
   List<Object?> get props =>
       [id, name, quantity, category, expiryDate, barcode, addedAt];
 }
+

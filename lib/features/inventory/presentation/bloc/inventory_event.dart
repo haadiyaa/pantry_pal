@@ -34,3 +34,4 @@ final class InventoryItemDeleted extends InventoryEvent {
   @override
   List<Object?> get props => [id];
 }
+

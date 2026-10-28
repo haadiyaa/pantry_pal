@@ -10,3 +10,4 @@ abstract class PantryRepository {
   Future<void> update(PantryItem item);
   Future<void> delete(int id);
 }
+

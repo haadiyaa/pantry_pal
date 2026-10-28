@@ -77,3 +77,4 @@ class SqlitePantryRepository implements PantryRepository {
     await db.delete(_table, where: 'id = ?', whereArgs: [id]);
   }
 }
+
