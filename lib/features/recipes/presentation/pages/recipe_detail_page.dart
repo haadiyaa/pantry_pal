@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../inventory/domain/models/pantry_item.dart';
 import '../../../inventory/domain/repositories/pantry_repository.dart';
+import '../../../shopping/domain/repositories/shopping_repository.dart';
 import '../../domain/constants/recipe_matcher_constants.dart';
 import '../../domain/models/detail_ingredient_item.dart';
 import '../../domain/models/recipe.dart';
@@ -30,11 +31,19 @@ class RecipeDetailPage extends StatelessWidget {
       staplesRepo = null;
     }
 
+    ShoppingRepository? shoppingRepo;
+    try {
+      shoppingRepo = context.read<ShoppingRepository>();
+    } catch (_) {
+      shoppingRepo = null;
+    }
+
     return BlocProvider(
       create: (context) => RecipeDetailCubit(
         recipeRepository: context.read<RecipeRepository>(),
         pantryRepository: context.read<PantryRepository>(),
         staplesRepository: staplesRepo,
+        shoppingRepository: shoppingRepo,
       )..loadRecipe(recipeId),
       child: const _RecipeDetailView(),
     );
@@ -249,15 +258,37 @@ class _RecipeDetailView extends StatelessWidget {
                       ),
                       const SizedBox(height: 16),
 
-                      // Step 7 Shopping List Placeholder Hook
+                      // Step 7 Shopping List Live Hook
                       FilledButton.tonalIcon(
                         key: const Key('add_missing_to_shopping_list_hook'),
                         icon: const Icon(Icons.playlist_add),
                         label: const Text(
-                          'Add missing ingredients to shopping list (Step 7)',
+                          'Add missing ingredients to shopping list',
                         ),
-                        // Explicitly disabled per Step 6 requirement: hook reserved for Step 7
-                        onPressed: null,
+                        onPressed: (detailMatch != null &&
+                                detailMatch.missingCount > 0)
+                            ? () async {
+                                final count = await context
+                                    .read<RecipeDetailCubit>()
+                                    .addMissingToShoppingList();
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        count == 1
+                                            ? 'Added 1 item to shopping list'
+                                            : 'Added $count items to shopping list',
+                                      ),
+                                      action: SnackBarAction(
+                                        label: 'View list',
+                                        onPressed: () =>
+                                            context.push('/shopping'),
+                                      ),
+                                    ),
+                                  );
+                                }
+                              }
+                            : null,
                       ),
                       const SizedBox(height: 24),
 

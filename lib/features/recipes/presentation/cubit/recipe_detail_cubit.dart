@@ -7,12 +7,15 @@ import '../../domain/repositories/recipe_repository.dart';
 import '../../domain/repositories/staples_repository.dart';
 import '../../domain/services/ingredient_normalizer.dart';
 import '../../domain/services/recipe_matcher.dart';
+import '../../../shopping/domain/repositories/shopping_repository.dart';
+import '../../../shopping/domain/services/shopping_from_recipe.dart';
 import 'recipe_detail_state.dart';
 
 class RecipeDetailCubit extends Cubit<RecipeDetailState> {
   RecipeDetailCubit({
     required this.recipeRepository,
     required this.pantryRepository,
+    this.shoppingRepository,
     StaplesRepository? staplesRepository,
     DateTime Function()? nowProvider,
   })  : _staplesRepository =
@@ -22,6 +25,7 @@ class RecipeDetailCubit extends Cubit<RecipeDetailState> {
 
   final RecipeRepository recipeRepository;
   final PantryRepository pantryRepository;
+  final ShoppingRepository? shoppingRepository;
   final StaplesRepository _staplesRepository;
   final DateTime Function() _nowProvider;
 
@@ -188,5 +192,26 @@ class RecipeDetailCubit extends Cubit<RecipeDetailState> {
         unavailableStaples: unavailableStaples,
       ),
     );
+  }
+
+  /// Adds all ingredients currently marked as Missing to the shopping list.
+  /// Assumed staples and user-ticked marks are excluded.
+  Future<int> addMissingToShoppingList() async {
+    if (state.detailMatch == null || state.recipe == null) return 0;
+
+    final missingItems = ShoppingFromRecipe.extractMissing(
+      matchResult: state.detailMatch!,
+      recipeName: state.recipe!.name,
+      now: _nowProvider(),
+    );
+
+    if (missingItems.isEmpty) return 0;
+
+    final repo = shoppingRepository;
+    if (repo != null) {
+      await repo.addAll(missingItems);
+    }
+
+    return missingItems.length;
   }
 }

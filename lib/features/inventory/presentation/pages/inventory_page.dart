@@ -4,7 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../domain/models/pantry_category.dart';
+import '../../domain/models/pantry_event_reason.dart';
 import '../../domain/models/pantry_item.dart';
+import '../../../shopping/presentation/cubit/shopping_badge_cubit.dart';
 import '../bloc/inventory_bloc.dart';
 
 class InventoryPage extends StatelessWidget {
@@ -36,6 +38,22 @@ class InventoryPage extends StatelessWidget {
             icon: const Icon(Icons.restaurant_menu),
             tooltip: 'Recipe Ideas',
             onPressed: () => context.push('/recipes'),
+          ),
+          BlocBuilder<ShoppingBadgeCubit, int>(
+            builder: (context, count) {
+              final icon = const Icon(Icons.shopping_cart_outlined);
+              return IconButton(
+                key: const Key('shopping_list_button'),
+                tooltip: 'Shopping List',
+                icon: count > 0
+                    ? Badge(
+                        label: Text('$count'),
+                        child: icon,
+                      )
+                    : icon,
+                onPressed: () => context.push('/shopping'),
+              );
+            },
           ),
           IconButton(
             key: const Key('settings_button'),
@@ -127,7 +145,39 @@ class InventoryPage extends StatelessWidget {
           Expanded(
             child: BlocConsumer<InventoryBloc, InventoryState>(
               listener: (context, state) {
-                if (state.status == InventoryStatus.failure &&
+                if (state.lastConsumeResult != null) {
+                  final result = state.lastConsumeResult!;
+                  String message;
+                  if (result.event.reason == PantryEventReason.used) {
+                    if (result.shoppingItemId != null) {
+                      message = 'Added "${result.item.name}" to shopping list';
+                    } else if (result.wasRemoved) {
+                      message = 'Used up "${result.item.name}"';
+                    } else {
+                      message =
+                          'Used 1 "${result.item.name}" (${result.item.quantity - 1} left)';
+                    }
+                  } else if (result.event.reason == PantryEventReason.wasted) {
+                    message = 'Marked "${result.item.name}" as thrown away';
+                  } else {
+                    message = 'Deleted "${result.item.name}"';
+                  }
+
+                  ScaffoldMessenger.of(context).clearSnackBars();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(message),
+                      action: SnackBarAction(
+                        label: 'Undo',
+                        onPressed: () {
+                          context
+                              .read<InventoryBloc>()
+                              .add(InventoryConsumeUndone(result));
+                        },
+                      ),
+                    ),
+                  );
+                } else if (state.status == InventoryStatus.failure &&
                     state.items.isNotEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
@@ -366,38 +416,137 @@ class _ItemTile extends StatelessWidget {
     return '$d day${d == 1 ? '' : 's'} left';
   }
 
+  void _showItemOptions(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              title: Text(
+                item.name,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              subtitle: Text('${item.quantity} in pantry • $_label'),
+            ),
+            const Divider(height: 1),
+            ListTile(
+              key: const Key('item_option_used_up'),
+              leading:
+                  const Icon(Icons.check_circle_outline, color: Colors.green),
+              title: const Text('Used up'),
+              subtitle: Text(
+                item.quantity > 1
+                    ? 'Consume 1 (${item.quantity - 1} remaining)'
+                    : 'Consume and add to shopping list',
+              ),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                context.read<InventoryBloc>().add(InventoryItemUsedUp(item));
+              },
+            ),
+            ListTile(
+              key: const Key('item_option_wasted'),
+              leading: const Icon(Icons.delete_sweep_outlined,
+                  color: Colors.orange),
+              title: const Text('Threw away'),
+              subtitle:
+                  const Text('Spoiled or wasted (not added to shopping list)'),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                context.read<InventoryBloc>().add(InventoryItemWasted(item));
+              },
+            ),
+            ListTile(
+              key: const Key('item_option_deleted'),
+              leading: Icon(
+                Icons.delete_outline,
+                color: Theme.of(context).colorScheme.error,
+              ),
+              title: Text(
+                'Delete',
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+              subtitle: const Text('Remove mistake (not recorded as waste)'),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                if (item.id != null) {
+                  context
+                      .read<InventoryBloc>()
+                      .add(InventoryItemDeleted(item.id!));
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final category = PantryCategory.fromString(item.category);
 
     return Dismissible(
-      key: ValueKey(item.id ?? item.name),
-      direction: DismissDirection.endToStart,
+      key: ValueKey('pantry_tile_${item.id ?? item.name}'),
+      direction: DismissDirection.horizontal,
       background: Container(
+        color: Colors.green.shade700,
+        alignment: Alignment.centerLeft,
+        padding: const EdgeInsets.only(left: 16),
+        child: const Row(
+          children: [
+            Icon(Icons.check_circle_outline, color: Colors.white),
+            SizedBox(width: 8),
+            Text(
+              'Used up',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
+      secondaryBackground: Container(
         color: theme.colorScheme.errorContainer,
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 16),
-        child: Icon(Icons.delete, color: theme.colorScheme.onErrorContainer),
-      ),
-      onDismissed: (_) {
-        if (item.id != null) {
-          final deletedItem = item;
-          context.read<InventoryBloc>().add(InventoryItemDeleted(deletedItem.id!));
-          ScaffoldMessenger.of(context).clearSnackBars();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Deleted "${deletedItem.name}"'),
-              action: SnackBarAction(
-                label: 'Undo',
-                onPressed: () {
-                  context
-                      .read<InventoryBloc>()
-                      .add(InventoryItemAdded(deletedItem));
-                },
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Text(
+              'Delete',
+              style: TextStyle(
+                color: theme.colorScheme.onErrorContainer,
+                fontWeight: FontWeight.bold,
               ),
             ),
-          );
+            const SizedBox(width: 8),
+            Icon(Icons.delete_outline,
+                color: theme.colorScheme.onErrorContainer),
+          ],
+        ),
+      ),
+      confirmDismiss: (direction) async {
+        if (direction == DismissDirection.startToEnd) {
+          if (item.quantity > 1) {
+            context.read<InventoryBloc>().add(InventoryItemUsedUp(item));
+            return false;
+          }
+          return true;
+        }
+        return true;
+      },
+      onDismissed: (direction) {
+        if (direction == DismissDirection.startToEnd) {
+          context.read<InventoryBloc>().add(InventoryItemUsedUp(item));
+        } else {
+          if (item.id != null) {
+            context.read<InventoryBloc>().add(InventoryItemDeleted(item.id!));
+          }
         }
       },
       child: ListTile(
@@ -429,6 +578,7 @@ class _ItemTile extends StatelessWidget {
           ),
         ),
         onTap: () => context.push('/item/${item.id}', extra: item),
+        onLongPress: () => _showItemOptions(context),
       ),
     );
   }

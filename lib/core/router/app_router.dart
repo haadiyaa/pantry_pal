@@ -12,6 +12,9 @@ import '../../features/receipt/presentation/pages/receipt_review_page.dart';
 import '../../features/receipt/presentation/pages/receipt_scan_page.dart';
 import '../../features/recipes/presentation/pages/recipe_detail_page.dart';
 import '../../features/recipes/presentation/pages/recipes_page.dart';
+import '../../features/shopping/domain/models/shopping_item.dart';
+import '../../features/shopping/presentation/pages/shopping_batch_review_page.dart';
+import '../../features/shopping/presentation/pages/shopping_list_page.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/',
@@ -66,6 +69,19 @@ final appRouter = GoRouter(
       builder: (context, state) {
         final id = state.pathParameters['id'] ?? '';
         return RecipeDetailPage(recipeId: id);
+      },
+    ),
+    GoRoute(
+      path: '/shopping',
+      name: 'shopping',
+      builder: (context, state) => const ShoppingListPage(),
+    ),
+    GoRoute(
+      path: '/shopping/review',
+      name: 'shopping-review',
+      builder: (context, state) {
+        final bought = state.extra as List<ShoppingItem>?;
+        return ShoppingBatchReviewPage(boughtItems: bought);
       },
     ),
     GoRoute(

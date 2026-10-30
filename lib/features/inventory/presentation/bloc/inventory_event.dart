@@ -58,3 +58,27 @@ final class InventoryExpiringFilterToggled extends InventoryEvent {
 final class InventoryFiltersCleared extends InventoryEvent {
   const InventoryFiltersCleared();
 }
+
+final class InventoryItemUsedUp extends InventoryEvent {
+  const InventoryItemUsedUp(this.item);
+  final PantryItem item;
+
+  @override
+  List<Object?> get props => [item];
+}
+
+final class InventoryItemWasted extends InventoryEvent {
+  const InventoryItemWasted(this.item);
+  final PantryItem item;
+
+  @override
+  List<Object?> get props => [item];
+}
+
+final class InventoryConsumeUndone extends InventoryEvent {
+  const InventoryConsumeUndone(this.result);
+  final ConsumeResult result;
+
+  @override
+  List<Object?> get props => [result];
+}

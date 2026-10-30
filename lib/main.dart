@@ -33,6 +33,13 @@ import 'features/recipes/data/repositories/shared_preferences_staples_repository
 import 'features/recipes/domain/repositories/recipe_repository.dart';
 import 'features/recipes/domain/repositories/staples_repository.dart';
 
+import 'features/shopping/data/repositories/shared_preferences_shopping_settings_repository.dart';
+import 'features/shopping/data/repositories/sqlite_shopping_repository.dart';
+import 'features/shopping/domain/repositories/shopping_repository.dart';
+import 'features/shopping/domain/repositories/shopping_settings_repository.dart';
+import 'features/shopping/presentation/cubit/shopping_badge_cubit.dart';
+import 'features/shopping/presentation/cubit/shopping_settings_cubit.dart';
+
 void _handleNotificationPayload(String? payload) {
   if (payload == null || payload.isEmpty) return;
 
@@ -88,6 +95,9 @@ Future<void> main() async {
     debugPrint('Failed to clean old recipe cache: $e');
   });
 
+  final shoppingRepo = SqliteShoppingRepository(appDb);
+  final shoppingSettingsRepo = SharedPreferencesShoppingSettingsRepository();
+
   // 4. Handle cold-launch from notification tap
   final coldLaunchPayload = await scheduler.getLaunchPayload();
   if (coldLaunchPayload != null) {
@@ -104,6 +114,8 @@ Future<void> main() async {
       notificationScheduler: scheduler,
       notificationSyncService: syncService,
       recipeRepository: recipeRepo,
+      shoppingRepository: shoppingRepo,
+      shoppingSettingsRepository: shoppingSettingsRepo,
     ),
   );
 }
@@ -117,6 +129,8 @@ class PantryPalApp extends StatelessWidget {
     required this.notificationScheduler,
     required this.notificationSyncService,
     required this.recipeRepository,
+    required this.shoppingRepository,
+    required this.shoppingSettingsRepository,
   });
 
   final PantryRepository pantryRepository;
@@ -125,6 +139,8 @@ class PantryPalApp extends StatelessWidget {
   final NotificationScheduler notificationScheduler;
   final NotificationSyncService notificationSyncService;
   final RecipeRepository recipeRepository;
+  final ShoppingRepository shoppingRepository;
+  final ShoppingSettingsRepository shoppingSettingsRepository;
 
   @override
   Widget build(BuildContext context) {
@@ -146,6 +162,12 @@ class PantryPalApp extends StatelessWidget {
         RepositoryProvider<RecipeRepository>.value(
           value: recipeRepository,
         ),
+        RepositoryProvider<ShoppingRepository>.value(
+          value: shoppingRepository,
+        ),
+        RepositoryProvider<ShoppingSettingsRepository>.value(
+          value: shoppingSettingsRepository,
+        ),
         RepositoryProvider<StaplesRepository>(
           create: (_) => SharedPreferencesStaplesRepository(),
         ),
@@ -165,6 +187,7 @@ class PantryPalApp extends StatelessWidget {
             create: (_) => InventoryBloc(
               pantryRepository,
               notificationSyncService: notificationSyncService,
+              shoppingSettingsRepository: shoppingSettingsRepository,
             )..add(const InventoryStarted()),
           ),
           BlocProvider(
@@ -179,6 +202,12 @@ class PantryPalApp extends StatelessWidget {
               scheduler: notificationScheduler,
               syncService: notificationSyncService,
             )..loadSettings(),
+          ),
+          BlocProvider(
+            create: (_) => ShoppingBadgeCubit(shoppingRepository),
+          ),
+          BlocProvider(
+            create: (_) => ShoppingSettingsCubit(shoppingSettingsRepository),
           ),
         ],
         child: MaterialApp.router(

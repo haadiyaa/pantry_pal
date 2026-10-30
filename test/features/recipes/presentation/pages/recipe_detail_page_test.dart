@@ -126,11 +126,11 @@ void main() {
       expect(find.byKey(const Key('add_to_pantry_Salt')), findsNothing);
       expect(find.byKey(const Key('add_to_pantry_Chicken Breasts')), findsNothing);
 
-      // Verify Step 7 hook button exists and is disabled
+      // Verify Step 7 hook button exists and is enabled (live in Step 7)
       final step7Button = tester.widget<FilledButton>(
         find.byKey(const Key('add_missing_to_shopping_list_hook')),
       );
-      expect(step7Button.onPressed, isNull);
+      expect(step7Button.onPressed, isNotNull);
 
       // Verify YouTube button
       expect(find.byKey(const Key('watch_youtube_video_button')), findsOneWidget);

@@ -3,9 +3,13 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:stream_transform/stream_transform.dart';
 
+import '../../domain/models/consume_result.dart';
+import '../../domain/models/pantry_event_reason.dart';
 import '../../domain/models/pantry_item.dart';
 import '../../domain/repositories/pantry_repository.dart';
 import '../../../notifications/domain/services/notification_sync_service.dart';
+import '../../../shopping/data/repositories/shared_preferences_shopping_settings_repository.dart';
+import '../../../shopping/domain/repositories/shopping_settings_repository.dart';
 
 part 'inventory_event.dart';
 part 'inventory_state.dart';
@@ -21,7 +25,10 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
   InventoryBloc(
     this._repository, {
     NotificationSyncService? notificationSyncService,
+    ShoppingSettingsRepository? shoppingSettingsRepository,
   })  : _syncService = notificationSyncService,
+        _settingsRepo = shoppingSettingsRepository ??
+            SharedPreferencesShoppingSettingsRepository(),
         super(const InventoryState()) {
     on<InventoryStarted>(_onStarted);
     on<InventorySearchChanged>(
@@ -34,10 +41,14 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
     on<InventoryItemAdded>(_onItemAdded);
     on<InventoryItemUpdated>(_onItemUpdated);
     on<InventoryItemDeleted>(_onItemDeleted);
+    on<InventoryItemUsedUp>(_onItemUsedUp);
+    on<InventoryItemWasted>(_onItemWasted);
+    on<InventoryConsumeUndone>(_onConsumeUndone);
   }
 
   final PantryRepository _repository;
   final NotificationSyncService? _syncService;
+  final ShoppingSettingsRepository _settingsRepo;
 
   Future<void> _onStarted(
     InventoryStarted event,
@@ -128,6 +139,72 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
   ) async {
     try {
       await _repository.delete(event.id);
+      await _refresh(emit);
+      await _syncService?.syncNotifications();
+    } catch (e) {
+      emit(
+        state.copyWith(
+          status: InventoryStatus.failure,
+          errorMessage: e.toString(),
+        ),
+      );
+    }
+  }
+
+  Future<void> _onItemUsedUp(
+    InventoryItemUsedUp event,
+    Emitter<InventoryState> emit,
+  ) async {
+    try {
+      final addToShopping = await _settingsRepo.getAddUsedUpToShoppingList();
+      final result = await _repository.consume(
+        item: event.item,
+        reason: PantryEventReason.used,
+        addToShoppingList: addToShopping,
+      );
+      emit(state.copyWith(lastConsumeResult: () => result));
+      await _refresh(emit);
+      await _syncService?.syncNotifications();
+    } catch (e) {
+      emit(
+        state.copyWith(
+          status: InventoryStatus.failure,
+          errorMessage: e.toString(),
+        ),
+      );
+    }
+  }
+
+  Future<void> _onItemWasted(
+    InventoryItemWasted event,
+    Emitter<InventoryState> emit,
+  ) async {
+    try {
+      final result = await _repository.consume(
+        item: event.item,
+        reason: PantryEventReason.wasted,
+        addToShoppingList: false,
+      );
+      emit(state.copyWith(lastConsumeResult: () => result));
+      await _refresh(emit);
+      await _syncService?.syncNotifications();
+    } catch (e) {
+      emit(
+        state.copyWith(
+          status: InventoryStatus.failure,
+          errorMessage: e.toString(),
+        ),
+      );
+    }
+  }
+
+  Future<void> _onConsumeUndone(
+    InventoryConsumeUndone event,
+    Emitter<InventoryState> emit,
+  ) async {
+    try {
+      await _repository.undoConsume(event.result);
+      emit(state.copyWith(lastConsumeResult: () => null));
       await _refresh(emit);
       await _syncService?.syncNotifications();
     } catch (e) {

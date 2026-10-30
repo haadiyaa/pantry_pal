@@ -10,6 +10,7 @@ final class InventoryState extends Equatable {
     this.searchQuery = '',
     this.selectedCategories = const {},
     this.expiringSoonOnly = false,
+    this.lastConsumeResult,
     this.errorMessage,
   });
 
@@ -19,6 +20,7 @@ final class InventoryState extends Equatable {
   final String searchQuery;
   final Set<String> selectedCategories;
   final bool expiringSoonOnly;
+  final ConsumeResult? lastConsumeResult;
   final String? errorMessage;
 
   bool get hasActiveFilters =>
@@ -35,6 +37,7 @@ final class InventoryState extends Equatable {
     String? searchQuery,
     Set<String>? selectedCategories,
     bool? expiringSoonOnly,
+    ConsumeResult? Function()? lastConsumeResult,
     String? errorMessage,
   }) {
     return InventoryState(
@@ -44,6 +47,9 @@ final class InventoryState extends Equatable {
       searchQuery: searchQuery ?? this.searchQuery,
       selectedCategories: selectedCategories ?? this.selectedCategories,
       expiringSoonOnly: expiringSoonOnly ?? this.expiringSoonOnly,
+      lastConsumeResult: lastConsumeResult != null
+          ? lastConsumeResult()
+          : this.lastConsumeResult,
       errorMessage: errorMessage,
     );
   }
@@ -56,6 +62,7 @@ final class InventoryState extends Equatable {
         searchQuery,
         selectedCategories,
         expiringSoonOnly,
+        lastConsumeResult,
         errorMessage,
       ];
 }

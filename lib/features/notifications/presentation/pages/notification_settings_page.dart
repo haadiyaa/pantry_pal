@@ -4,6 +4,7 @@ import 'package:permission_handler/permission_handler.dart';
 
 import '../cubit/notification_settings_cubit.dart';
 import '../cubit/notification_settings_state.dart';
+import '../../../shopping/presentation/cubit/shopping_settings_cubit.dart';
 
 class NotificationSettingsPage extends StatelessWidget {
   const NotificationSettingsPage({super.key});
@@ -180,6 +181,39 @@ class NotificationSettingsPage extends StatelessWidget {
                 value: settings.digestEnabled,
                 onChanged: settings.notificationsEnabled ? cubit.toggleDigest : null,
                 secondary: const Icon(Icons.inventory_2_outlined),
+              ),
+              const Divider(),
+
+              // Shopping List Integration Setting
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                child: Text(
+                  'Shopping List',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              BlocBuilder<ShoppingSettingsCubit, bool>(
+                builder: (context, addUsedUp) {
+                  return SwitchListTile(
+                    key: const Key('add_used_up_to_shopping_toggle'),
+                    secondary: const Icon(Icons.add_shopping_cart_outlined),
+                    title: const Text(
+                      'Add to shopping list when I use up an item',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    subtitle: const Text(
+                      'Automatically add items to your shopping list when their quantity reaches 0',
+                    ),
+                    value: addUsedUp,
+                    onChanged: (val) {
+                      context.read<ShoppingSettingsCubit>().toggle(val);
+                    },
+                  );
+                },
               ),
               const Divider(),
 

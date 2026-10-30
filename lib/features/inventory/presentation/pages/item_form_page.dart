@@ -65,6 +65,7 @@ class _ItemFormView extends StatelessWidget {
     final theme = Theme.of(context);
     final cubit = context.read<ItemFormCubit>();
     final isEditing = cubit.state.isEditing;
+    final initialItem = cubit.state.initialItem;
 
     return BlocListener<ItemFormCubit, ItemFormState>(
       listenWhen: (prev, curr) => prev.status != curr.status,
@@ -90,6 +91,71 @@ class _ItemFormView extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           title: Text(isEditing ? 'Edit Item' : 'Add Item'),
+          actions: [
+            if (isEditing && initialItem != null)
+              PopupMenuButton<String>(
+                key: const Key('item_form_actions_menu'),
+                icon: const Icon(Icons.more_vert),
+                tooltip: 'More actions',
+                onSelected: (value) {
+                  if (value == 'used_up') {
+                    context
+                        .read<InventoryBloc>()
+                        .add(InventoryItemUsedUp(initialItem));
+                    Navigator.of(context).pop();
+                  } else if (value == 'wasted') {
+                    context
+                        .read<InventoryBloc>()
+                        .add(InventoryItemWasted(initialItem));
+                    Navigator.of(context).pop();
+                  } else if (value == 'delete') {
+                    if (initialItem.id != null) {
+                      context
+                          .read<InventoryBloc>()
+                          .add(InventoryItemDeleted(initialItem.id!));
+                    }
+                    Navigator.of(context).pop();
+                  }
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    key: Key('item_form_action_used_up'),
+                    value: 'used_up',
+                    child: Row(
+                      children: [
+                        Icon(Icons.check_circle_outline, color: Colors.green),
+                        SizedBox(width: 8),
+                        Text('Mark as Used up'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    key: Key('item_form_action_wasted'),
+                    value: 'wasted',
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete_sweep_outlined,
+                            color: Colors.orange),
+                        SizedBox(width: 8),
+                        Text('Mark as Threw away'),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    key: const Key('item_form_action_delete'),
+                    value: 'delete',
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete_outline,
+                            color: theme.colorScheme.error),
+                        SizedBox(width: 8),
+                        Text('Delete'),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+          ],
         ),
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(16),

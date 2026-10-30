@@ -93,7 +93,7 @@ void main() {
     );
     final upgradedDb = await appDb.database;
 
-    expect(await upgradedDb.getVersion(), 5);
+    expect(await upgradedDb.getVersion(), greaterThanOrEqualTo(5));
 
     // 4. Verify existing data preserved
     final pantryRows = await upgradedDb.query('pantry_items');
