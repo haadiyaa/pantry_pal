@@ -27,6 +27,10 @@ import 'features/receipt/domain/services/image_picker_service.dart';
 import 'features/receipt/domain/services/receipt_parser.dart';
 import 'features/receipt/domain/services/text_recognizer.dart';
 
+import 'features/recipes/data/datasources/themealdb_remote_datasource.dart';
+import 'features/recipes/data/repositories/cached_recipe_repository.dart';
+import 'features/recipes/domain/repositories/recipe_repository.dart';
+
 void _handleNotificationPayload(String? payload) {
   if (payload == null || payload.isEmpty) return;
 
@@ -73,6 +77,15 @@ Future<void> main() async {
     scheduler: scheduler,
   );
 
+  final recipeRemoteDataSource = TheMealDbRemoteDataSource();
+  final recipeRepo = CachedRecipeRepository(
+    appDb: appDb,
+    remoteDataSource: recipeRemoteDataSource,
+  );
+  recipeRepo.cleanOldCache().catchError((e) {
+    debugPrint('Failed to clean old recipe cache: $e');
+  });
+
   // 4. Handle cold-launch from notification tap
   final coldLaunchPayload = await scheduler.getLaunchPayload();
   if (coldLaunchPayload != null) {
@@ -88,6 +101,7 @@ Future<void> main() async {
       notificationSettingsRepository: settingsRepo,
       notificationScheduler: scheduler,
       notificationSyncService: syncService,
+      recipeRepository: recipeRepo,
     ),
   );
 }
@@ -100,6 +114,7 @@ class PantryPalApp extends StatelessWidget {
     required this.notificationSettingsRepository,
     required this.notificationScheduler,
     required this.notificationSyncService,
+    required this.recipeRepository,
   });
 
   final PantryRepository pantryRepository;
@@ -107,6 +122,7 @@ class PantryPalApp extends StatelessWidget {
   final NotificationSettingsRepository notificationSettingsRepository;
   final NotificationScheduler notificationScheduler;
   final NotificationSyncService notificationSyncService;
+  final RecipeRepository recipeRepository;
 
   @override
   Widget build(BuildContext context) {
@@ -124,6 +140,9 @@ class PantryPalApp extends StatelessWidget {
         ),
         RepositoryProvider<NotificationSyncService>.value(
           value: notificationSyncService,
+        ),
+        RepositoryProvider<RecipeRepository>.value(
+          value: recipeRepository,
         ),
         RepositoryProvider<TextRecognizer>(
           create: (_) => MlKitTextRecognizer(),

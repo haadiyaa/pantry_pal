@@ -10,6 +10,8 @@ import '../../features/product_lookup/presentation/pages/scanner_page.dart';
 import '../../features/receipt/domain/models/receipt_draft.dart';
 import '../../features/receipt/presentation/pages/receipt_review_page.dart';
 import '../../features/receipt/presentation/pages/receipt_scan_page.dart';
+import '../../features/recipes/presentation/pages/recipe_detail_page.dart';
+import '../../features/recipes/presentation/pages/recipes_page.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/',
@@ -51,6 +53,19 @@ final appRouter = GoRouter(
       builder: (context, state) {
         final draft = state.extra as ReceiptDraft?;
         return ReceiptReviewPage(draft: draft);
+      },
+    ),
+    GoRoute(
+      path: '/recipes',
+      name: 'recipes',
+      builder: (context, state) => const RecipesPage(),
+    ),
+    GoRoute(
+      path: '/recipes/:id',
+      name: 'recipe-detail',
+      builder: (context, state) {
+        final id = state.pathParameters['id'] ?? '';
+        return RecipeDetailPage(recipeId: id);
       },
     ),
     GoRoute(

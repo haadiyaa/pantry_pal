@@ -1,0 +1,70 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:pantry_pal/features/recipes/domain/services/ingredient_normalizer.dart';
+
+void main() {
+  group('IngredientNormalizer', () {
+    test('removes brand names, units, and noise words', () {
+      expect(IngredientNormalizer.normalize('Amul Butter 500g'), 'butter');
+      expect(IngredientNormalizer.normalize('Tata Salt 1kg'), 'salt');
+      expect(IngredientNormalizer.normalize('Britannia Cheese Slices'), 'cheese');
+      expect(IngredientNormalizer.normalize('Fresh Organic Spinach 250g'), 'spinach');
+      expect(IngredientNormalizer.normalize('1 Packet Frozen Peas'), 'peas');
+    });
+
+    test('singularizes common plurals', () {
+      expect(IngredientNormalizer.normalize('Eggs'), 'egg');
+      expect(IngredientNormalizer.normalize('Onions'), 'onion');
+      expect(IngredientNormalizer.normalize('Potatoes'), 'potato');
+      expect(IngredientNormalizer.normalize('Tomatoes'), 'tomato');
+      expect(IngredientNormalizer.normalize('Strawberries'), 'strawberry');
+      expect(IngredientNormalizer.normalize('Green Chillies'), 'green chillies');
+    });
+
+    test('correctly maps Indian culinary synonyms to canonical keywords', () {
+      expect(IngredientNormalizer.normalize('Curd'), 'yogurt');
+      expect(IngredientNormalizer.normalize('Dahi'), 'yogurt');
+      expect(IngredientNormalizer.normalize('Capsicum'), 'bell pepper');
+      expect(IngredientNormalizer.normalize('Brinjal'), 'eggplant');
+      expect(IngredientNormalizer.normalize('Bhindi'), 'okra');
+      expect(IngredientNormalizer.normalize('Lady Finger'), 'okra');
+      expect(IngredientNormalizer.normalize('Coriander Leaves'), 'cilantro');
+      expect(IngredientNormalizer.normalize('Maida'), 'plain flour');
+      expect(IngredientNormalizer.normalize('Atta'), 'flour');
+      expect(IngredientNormalizer.normalize('Jeera'), 'cumin');
+      expect(IngredientNormalizer.normalize('Haldi'), 'turmeric');
+      expect(IngredientNormalizer.normalize('Spring Onion'), 'green onions');
+      expect(IngredientNormalizer.normalize('Aloo'), 'potato');
+      expect(IngredientNormalizer.normalize('Pyaaz'), 'onion');
+      expect(IngredientNormalizer.normalize('Methi'), 'fenugreek');
+      expect(IngredientNormalizer.normalize('Pudina'), 'mint');
+      expect(IngredientNormalizer.normalize('Chana'), 'chickpeas');
+      expect(IngredientNormalizer.normalize('Rajma'), 'kidney beans');
+    });
+
+    test('falls back to category when product name contains only brand or noise', () {
+      expect(
+        IngredientNormalizer.normalize('Amul 500g', category: 'Dairy'),
+        'dairy',
+      );
+    });
+
+    test('handles empty, blank, and garbage characters safely', () {
+      expect(IngredientNormalizer.normalize(''), '');
+      expect(IngredientNormalizer.normalize('   '), '');
+      expect(IngredientNormalizer.normalize('!@#\$%^&*()'), '');
+      expect(IngredientNormalizer.normalize('12345 6789'), '');
+    });
+
+    test('isStaple correctly identifies standard kitchen staples', () {
+      expect(IngredientNormalizer.isStaple('Salt'), isTrue);
+      expect(IngredientNormalizer.isStaple('Sea Salt'), isTrue);
+      expect(IngredientNormalizer.isStaple('Water'), isTrue);
+      expect(IngredientNormalizer.isStaple('Olive Oil'), isTrue);
+      expect(IngredientNormalizer.isStaple('Black Pepper'), isTrue);
+      expect(IngredientNormalizer.isStaple('Chicken Breast'), isFalse);
+      expect(IngredientNormalizer.isStaple('Paneer'), isFalse);
+      expect(IngredientNormalizer.isStaple('Strawberries'), isFalse);
+    });
+  });
+}
+

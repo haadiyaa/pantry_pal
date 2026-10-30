@@ -11,10 +11,12 @@ class AppDatabase {
   static final AppDatabase instance = AppDatabase();
 
   static const defaultDbName = 'pantry_pal.db';
-  static const dbVersion = 4;
+  static const dbVersion = 5;
 
   static const tablePantryItems = 'pantry_items';
   static const tableProductCache = 'product_cache';
+  static const tableRecipeCache = 'recipe_cache';
+  static const tableIngredientSearchCache = 'ingredient_search_cache';
 
   final DatabaseFactory? _factory;
   final String? _customPath;
@@ -89,6 +91,30 @@ class AppDatabase {
         fetched_at INTEGER NOT NULL -- epoch milliseconds
       )
     ''');
+
+    // Schema v5: Recipe cache table for full meal details
+    await db.execute('''
+      CREATE TABLE $tableRecipeCache (
+        id         TEXT    PRIMARY KEY,
+        json       TEXT    NOT NULL,
+        fetched_at INTEGER NOT NULL -- epoch milliseconds
+      )
+    ''');
+    await db.execute(
+      'CREATE INDEX idx_recipe_cache_fetched ON $tableRecipeCache (fetched_at)',
+    );
+
+    // Schema v5: Ingredient search cache table for filtered recipe IDs
+    await db.execute('''
+      CREATE TABLE $tableIngredientSearchCache (
+        keyword         TEXT    PRIMARY KEY,
+        recipe_ids_json TEXT    NOT NULL,
+        fetched_at      INTEGER NOT NULL -- epoch milliseconds
+      )
+    ''');
+    await db.execute(
+      'CREATE INDEX idx_ingredient_cache_fetched ON $tableIngredientSearchCache (fetched_at)',
+    );
   }
 
   /// Upgrades existing databases incrementally without data loss.
@@ -126,6 +152,45 @@ class AppDatabase {
         'ALTER TABLE $tablePantryItems ADD COLUMN price_paise INTEGER',
       );
     }
+    if (oldVersion < 5) {
+      // Version 5: Add recipe_cache and ingredient_search_cache tables
+      await db.execute('''
+        CREATE TABLE $tableRecipeCache (
+          id         TEXT    PRIMARY KEY,
+          json       TEXT    NOT NULL,
+          fetched_at INTEGER NOT NULL
+        )
+      ''');
+      await db.execute(
+        'CREATE INDEX idx_recipe_cache_fetched ON $tableRecipeCache (fetched_at)',
+      );
+      await db.execute('''
+        CREATE TABLE $tableIngredientSearchCache (
+          keyword         TEXT    PRIMARY KEY,
+          recipe_ids_json TEXT    NOT NULL,
+          fetched_at      INTEGER NOT NULL
+        )
+      ''');
+      await db.execute(
+        'CREATE INDEX idx_ingredient_cache_fetched ON $tableIngredientSearchCache (fetched_at)',
+      );
+    }
+  }
+
+  /// Cleans up stale recipe and ingredient cache entries older than [maxAge].
+  Future<void> cleanOldCache([Duration maxAge = const Duration(days: 30)]) async {
+    final db = await database;
+    final cutoff = DateTime.now().subtract(maxAge).millisecondsSinceEpoch;
+    await db.delete(
+      tableRecipeCache,
+      where: 'fetched_at < ?',
+      whereArgs: [cutoff],
+    );
+    await db.delete(
+      tableIngredientSearchCache,
+      where: 'fetched_at < ?',
+      whereArgs: [cutoff],
+    );
   }
 
   Future<void> close() async {

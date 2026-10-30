@@ -32,6 +32,12 @@ class InventoryPage extends StatelessWidget {
             },
           ),
           IconButton(
+            key: const Key('recipes_button'),
+            icon: const Icon(Icons.restaurant_menu),
+            tooltip: 'Recipe Ideas',
+            onPressed: () => context.push('/recipes'),
+          ),
+          IconButton(
             key: const Key('settings_button'),
             icon: const Icon(Icons.settings_outlined),
             tooltip: 'Notification Settings',
