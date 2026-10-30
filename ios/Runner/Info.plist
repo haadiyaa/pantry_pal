@@ -27,7 +27,9 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>Pantry Pal needs camera access to scan grocery barcodes.</string>
+	<string>Pantry Pal needs camera access to scan grocery barcodes and receipt photos.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Pantry Pal needs photo library access to import receipt photos for item scanning.</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>

@@ -62,6 +62,36 @@ class ItemFormCubit extends Cubit<ItemFormState> {
     emit(state.copyWith(notes: value));
   }
 
+  void priceChanged(String value) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) {
+      emit(state.copyWith(
+        priceText: value,
+        priceInPaise: () => null,
+        priceError: () => null,
+      ));
+      return;
+    }
+
+    final normalized = trimmed.replaceAll(',', '.');
+    final parsed = double.tryParse(normalized);
+    if (parsed == null || parsed < 0) {
+      emit(state.copyWith(
+        priceText: value,
+        priceInPaise: () => null,
+        priceError: () => 'Enter a valid price (e.g. 45.50)',
+      ));
+      return;
+    }
+
+    final paise = (parsed * 100).round();
+    emit(state.copyWith(
+      priceText: value,
+      priceInPaise: () => paise,
+      priceError: () => null,
+    ));
+  }
+
   Future<void> submit() async {
     final trimmedName = state.name.trim();
     if (trimmedName.isEmpty) {
@@ -78,9 +108,14 @@ class ItemFormCubit extends Cubit<ItemFormState> {
       return;
     }
 
+    if (state.priceError != null) {
+      return;
+    }
+
     emit(state.copyWith(
       nameError: () => null,
       quantityError: () => null,
+      priceError: () => null,
       status: ItemFormStatus.submitting,
     ));
 
@@ -96,6 +131,7 @@ class ItemFormCubit extends Cubit<ItemFormState> {
           expiryDate: state.expiryDate,
           barcode: barcode.isEmpty ? null : barcode,
           notes: notes.isEmpty ? null : notes,
+          priceInPaise: state.priceInPaise,
         );
         await repository.update(updated);
       } else {
@@ -107,6 +143,7 @@ class ItemFormCubit extends Cubit<ItemFormState> {
           barcode: barcode.isEmpty ? null : barcode,
           notes: notes.isEmpty ? null : notes,
           addedAt: DateTime.now(),
+          priceInPaise: state.priceInPaise,
         );
         await repository.add(newItem);
       }

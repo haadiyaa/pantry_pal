@@ -1,0 +1,16 @@
+[
+  { "text": "MORE RETAIL PRIVATE LIMITED", "left": 80.0, "top": 15.0, "width": 240.0, "height": 18.0 },
+  { "text": "GSTIN: 29AABCM1234F1Z5", "left": 90.0, "top": 35.0, "width": 220.0, "height": 14.0 },
+  { "text": "TAX INVOICE / CASH MEMO", "left": 100.0, "top": 52.0, "width": 200.0, "height": 14.0 },
+  { "text": "Bill No: 2026/9871 Date: 20/09/2026", "left": 30.0, "top": 72.0, "width": 280.0, "height": 14.0 },
+  { "text": "HSN 0401 Fresh Paneer 200g", "left": 30.0, "top": 100.0, "width": 180.0, "height": 16.0 },
+  { "text": "85.00", "left": 270.0, "top": 100.0, "width": 50.0, "height": 16.0 },
+  { "text": "0403 Greek Yogurt Blueberry", "left": 30.0, "top": 125.0, "width": 190.0, "height": 16.0 },
+  { "text": "60.00", "left": 270.0, "top": 125.0, "width": 50.0, "height": 16.0 },
+  { "text": "Sub Total: 145.00", "left": 30.0, "top": 160.0, "width": 200.0, "height": 15.0 },
+  { "text": "CGST @ 2.5%: 3.63", "left": 30.0, "top": 180.0, "width": 180.0, "height": 14.0 },
+  { "text": "SGST @ 2.5%: 3.63", "left": 30.0, "top": 198.0, "width": 180.0, "height": 14.0 },
+  { "text": "Net Payable: 152.26", "left": 30.0, "top": 220.0, "width": 200.0, "height": 18.0 },
+  { "text": "Paid By: UPI Ref 1234567890", "left": 30.0, "top": 245.0, "width": 220.0, "height": 14.0 }
+]
+

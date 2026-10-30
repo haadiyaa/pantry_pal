@@ -138,6 +138,18 @@ class SqlitePantryRepository implements PantryRepository {
   }
 
   @override
+  Future<void> addAll(List<PantryItem> items) async {
+    if (items.isEmpty) return;
+    final db = await _appDb.database;
+    await db.transaction((txn) async {
+      for (final item in items) {
+        final map = item.toMap()..remove('id');
+        await txn.insert(_table, map);
+      }
+    });
+  }
+
+  @override
   Future<void> update(PantryItem item) async {
     if (item.id == null) {
       throw ArgumentError('Cannot update an item without an id');

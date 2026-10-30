@@ -14,14 +14,23 @@ class ItemFormState extends Equatable {
     required this.expiryDate,
     this.barcode = '',
     this.notes = '',
+    this.priceText = '',
+    this.priceInPaise,
     this.nameError,
     this.quantityError,
+    this.priceError,
     this.status = ItemFormStatus.initial,
     this.errorMessage,
   });
 
   factory ItemFormState.fromItem(PantryItem? item) {
     final now = DateTime.now();
+    final initialPriceText = item?.priceInPaise != null
+        ? (item!.priceInPaise! / 100)
+            .toStringAsFixed(2)
+            .replaceAll(RegExp(r'\.00$'), '')
+        : '';
+
     return ItemFormState(
       initialItem: item,
       name: item?.name ?? '',
@@ -30,8 +39,11 @@ class ItemFormState extends Equatable {
       expiryDate: item?.expiryDate ?? now.add(const Duration(days: 7)),
       barcode: item?.barcode ?? '',
       notes: item?.notes ?? '',
+      priceText: initialPriceText,
+      priceInPaise: item?.priceInPaise,
       nameError: null,
       quantityError: null,
+      priceError: null,
       status: ItemFormStatus.initial,
       errorMessage: null,
     );
@@ -44,8 +56,11 @@ class ItemFormState extends Equatable {
   final DateTime expiryDate;
   final String barcode;
   final String notes;
+  final String priceText;
+  final int? priceInPaise;
   final String? nameError;
   final String? quantityError;
+  final String? priceError;
   final ItemFormStatus status;
   final String? errorMessage;
 
@@ -59,8 +74,11 @@ class ItemFormState extends Equatable {
     DateTime? expiryDate,
     String? barcode,
     String? notes,
+    String? priceText,
+    int? Function()? priceInPaise,
     String? Function()? nameError,
     String? Function()? quantityError,
+    String? Function()? priceError,
     ItemFormStatus? status,
     String? errorMessage,
   }) {
@@ -72,9 +90,13 @@ class ItemFormState extends Equatable {
       expiryDate: expiryDate ?? this.expiryDate,
       barcode: barcode ?? this.barcode,
       notes: notes ?? this.notes,
+      priceText: priceText ?? this.priceText,
+      priceInPaise:
+          priceInPaise != null ? priceInPaise() : this.priceInPaise,
       nameError: nameError != null ? nameError() : this.nameError,
       quantityError:
           quantityError != null ? quantityError() : this.quantityError,
+      priceError: priceError != null ? priceError() : this.priceError,
       status: status ?? this.status,
       errorMessage: errorMessage,
     );
@@ -89,10 +111,12 @@ class ItemFormState extends Equatable {
         expiryDate,
         barcode,
         notes,
+        priceText,
+        priceInPaise,
         nameError,
         quantityError,
+        priceError,
         status,
         errorMessage,
       ];
 }
-

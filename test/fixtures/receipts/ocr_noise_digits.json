@@ -1,0 +1,12 @@
+[
+  { "text": "NATURE BASKET", "left": 100.0, "top": 15.0, "width": 160.0, "height": 18.0 },
+  { "text": "Date: 05/10/2026", "left": 40.0, "top": 40.0, "width": 140.0, "height": 14.0 },
+  { "text": "Amul Butter 100g", "left": 30.0, "top": 70.0, "width": 150.0, "height": 16.0 },
+  { "text": "l", "left": 190.0, "top": 70.0, "width": 15.0, "height": 16.0 },
+  { "text": "5O.OO", "left": 250.0, "top": 70.0, "width": 50.0, "height": 16.0 },
+  { "text": "Britannia Cheese Slices", "left": 30.0, "top": 98.0, "width": 160.0, "height": 16.0 },
+  { "text": "14O,OO", "left": 250.0, "top": 98.0, "width": 50.0, "height": 16.0 },
+  { "text": "Subtotal 190.00", "left": 30.0, "top": 135.0, "width": 150.0, "height": 15.0 },
+  { "text": "Grand Total 190.00", "left": 30.0, "top": 155.0, "width": 180.0, "height": 16.0 }
+]
+

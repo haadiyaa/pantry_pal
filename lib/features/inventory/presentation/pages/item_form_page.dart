@@ -244,6 +244,29 @@ class _ItemFormView extends StatelessWidget {
               ),
               const SizedBox(height: 16),
 
+              // Optional Price Field
+              BlocSelector<ItemFormCubit, ItemFormState, String?>(
+                selector: (state) => state.priceError,
+                builder: (context, priceError) {
+                  return TextFormField(
+                    key: const Key('item_price_field'),
+                    initialValue: cubit.state.priceText,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(
+                      labelText: 'Price (optional)',
+                      hintText: 'e.g. 45.50',
+                      prefixText: '₹ ',
+                      border: const OutlineInputBorder(),
+                      prefixIcon: const Icon(Icons.currency_rupee_outlined),
+                      errorText: priceError,
+                    ),
+                    onChanged: cubit.priceChanged,
+                  );
+                },
+              ),
+              const SizedBox(height: 16),
+
               // Optional Notes Field
               TextFormField(
                 key: const Key('item_notes_field'),

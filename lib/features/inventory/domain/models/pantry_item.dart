@@ -12,6 +12,7 @@ class PantryItem extends Equatable {
     this.barcode,
     required this.addedAt,
     this.notes,
+    this.priceInPaise,
   });
 
   final int? id;
@@ -22,6 +23,7 @@ class PantryItem extends Equatable {
   final String? barcode;
   final DateTime addedAt;
   final String? notes;
+  final int? priceInPaise;
 
   /// Whole days until expiry from [referenceDate] (defaults to current local date).
   /// A negative value means the item has already expired.
@@ -66,6 +68,7 @@ class PantryItem extends Equatable {
     String? barcode,
     DateTime? addedAt,
     String? notes,
+    int? priceInPaise,
   }) {
     return PantryItem(
       id: id ?? this.id,
@@ -76,6 +79,7 @@ class PantryItem extends Equatable {
       barcode: barcode ?? this.barcode,
       addedAt: addedAt ?? this.addedAt,
       notes: notes ?? this.notes,
+      priceInPaise: priceInPaise ?? this.priceInPaise,
     );
   }
 
@@ -88,6 +92,7 @@ class PantryItem extends Equatable {
         'barcode': barcode,
         'added_at': addedAt.millisecondsSinceEpoch,
         'notes': notes,
+        'price_paise': priceInPaise,
       };
 
   factory PantryItem.fromMap(Map<String, Object?> map) => PantryItem(
@@ -100,9 +105,10 @@ class PantryItem extends Equatable {
         barcode: map['barcode'] as String?,
         addedAt: DateTime.fromMillisecondsSinceEpoch(map['added_at'] as int),
         notes: map['notes'] as String?,
+        priceInPaise: map['price_paise'] as int?,
       );
 
   @override
   List<Object?> get props =>
-      [id, name, quantity, category, expiryDate, barcode, addedAt, notes];
+      [id, name, quantity, category, expiryDate, barcode, addedAt, notes, priceInPaise];
 }

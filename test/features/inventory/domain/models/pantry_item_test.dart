@@ -117,6 +117,7 @@ void main() {
         barcode: '1234567890',
         addedAt: DateTime(2026, 1, 1),
         notes: 'Gluten free',
+        priceInPaise: 4500,
       );
 
       final map = item.toMap();
@@ -131,6 +132,7 @@ void main() {
       expect(map['barcode'], '1234567890');
       expect(map['added_at'], item.addedAt.millisecondsSinceEpoch);
       expect(map['notes'], 'Gluten free');
+      expect(map['price_paise'], 4500);
     });
 
     test('copyWith creates a new instance with updated fields', () {
@@ -141,9 +143,10 @@ void main() {
         category: 'Grains',
         expiryDate: DateTime(2026, 6, 1),
         addedAt: baseAddedAt,
+        priceInPaise: 25000,
       );
 
-      final updated = item.copyWith(quantity: 5, category: 'Pantry');
+      final updated = item.copyWith(quantity: 5, category: 'Pantry', priceInPaise: 28000);
 
       expect(updated.id, 1);
       expect(updated.name, 'Rice');
@@ -151,6 +154,7 @@ void main() {
       expect(updated.category, 'Pantry');
       expect(updated.expiryDate, DateTime(2026, 6, 1));
       expect(updated.addedAt, baseAddedAt);
+      expect(updated.priceInPaise, 28000);
     });
   });
 }

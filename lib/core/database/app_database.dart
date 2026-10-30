@@ -11,7 +11,7 @@ class AppDatabase {
   static final AppDatabase instance = AppDatabase();
 
   static const defaultDbName = 'pantry_pal.db';
-  static const dbVersion = 3;
+  static const dbVersion = 4;
 
   static const tablePantryItems = 'pantry_items';
   static const tableProductCache = 'product_cache';
@@ -55,7 +55,7 @@ class AppDatabase {
     );
   }
 
-  /// Fresh install creates the full, current (v3) schema directly.
+  /// Fresh install creates the full, current (v4) schema directly.
   static Future<void> onCreate(Database db, int version) async {
     await db.execute('''
       CREATE TABLE $tablePantryItems (
@@ -66,7 +66,8 @@ class AppDatabase {
         expiry_date  INTEGER NOT NULL, -- epoch milliseconds
         barcode      TEXT,
         added_at     INTEGER NOT NULL, -- epoch milliseconds
-        notes        TEXT
+        notes        TEXT,
+        price_paise  INTEGER
       )
     ''');
     await db.execute(
@@ -118,6 +119,12 @@ class AppDatabase {
           fetched_at INTEGER NOT NULL
         )
       ''');
+    }
+    if (oldVersion < 4) {
+      // Version 4: Add price_paise column
+      await db.execute(
+        'ALTER TABLE $tablePantryItems ADD COLUMN price_paise INTEGER',
+      );
     }
   }
 

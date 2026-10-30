@@ -125,6 +125,30 @@ void main() {
       ],
     );
 
+    blocTest<ItemFormCubit, ItemFormState>(
+      'priceChanged handles valid, empty, and invalid price inputs',
+      build: () => ItemFormCubit(repository: repository),
+      act: (cubit) {
+        cubit.priceChanged('45.50');
+        cubit.priceChanged('');
+        cubit.priceChanged('invalid');
+      },
+      expect: () => [
+        isA<ItemFormState>()
+            .having((s) => s.priceText, 'priceText', '45.50')
+            .having((s) => s.priceInPaise, 'priceInPaise', 4550)
+            .having((s) => s.priceError, 'priceError', isNull),
+        isA<ItemFormState>()
+            .having((s) => s.priceText, 'priceText', '')
+            .having((s) => s.priceInPaise, 'priceInPaise', isNull)
+            .having((s) => s.priceError, 'priceError', isNull),
+        isA<ItemFormState>()
+            .having((s) => s.priceText, 'priceText', 'invalid')
+            .having((s) => s.priceInPaise, 'priceInPaise', isNull)
+            .having((s) => s.priceError, 'priceError', isNotNull),
+      ],
+    );
+
     group('submit validation', () {
       blocTest<ItemFormCubit, ItemFormState>(
         'fails validation when name is empty and does not call repository',
@@ -135,6 +159,21 @@ void main() {
               .having((s) => s.nameError, 'nameError', 'Item name is required')
               .having((s) => s.status, 'status', ItemFormStatus.initial),
         ],
+        verify: (_) {
+          verifyNever(() => repository.add(any()));
+          verifyNever(() => repository.update(any()));
+        },
+      );
+
+      blocTest<ItemFormCubit, ItemFormState>(
+        'blocks submit when price has a validation error',
+        build: () => ItemFormCubit(repository: repository),
+        seed: () => ItemFormCubit(repository: repository).state.copyWith(
+              name: 'Apples',
+              priceError: () => 'Invalid price',
+            ),
+        act: (cubit) => cubit.submit(),
+        expect: () => [],
         verify: (_) {
           verifyNever(() => repository.add(any()));
           verifyNever(() => repository.update(any()));

@@ -1,0 +1,16 @@
+[
+  { "text": "DMART - AVENUE SUPERMARTS", "left": 90.0, "top": 15.0, "width": 220.0, "height": 18.0 },
+  { "text": "Invoice: DM-2026-8812", "left": 40.0, "top": 38.0, "width": 180.0, "height": 14.0 },
+  { "text": "Date: 12-10-2026", "left": 40.0, "top": 55.0, "width": 120.0, "height": 14.0 },
+  { "text": "Kelloggs Corn Flakes 500g", "left": 30.0, "top": 85.0, "width": 180.0, "height": 16.0 },
+  { "text": "195.00", "left": 260.0, "top": 85.0, "width": 50.0, "height": 16.0 },
+  { "text": "Good Day Butter Cookies 200g", "left": 30.0, "top": 110.0, "width": 190.0, "height": 16.0 },
+  { "text": "45.50", "left": 260.0, "top": 110.0, "width": 50.0, "height": 16.0 },
+  { "text": "Total Item: 2 Total Qty: 2", "left": 30.0, "top": 140.0, "width": 200.0, "height": 14.0 },
+  { "text": "Total Amount: 240.50", "left": 30.0, "top": 160.0, "width": 200.0, "height": 15.0 },
+  { "text": "Total Discount: -20.50", "left": 30.0, "top": 180.0, "width": 200.0, "height": 14.0 },
+  { "text": "You Saved: 20.50 Today!", "left": 30.0, "top": 198.0, "width": 220.0, "height": 14.0 },
+  { "text": "Net Payable: 220.00", "left": 30.0, "top": 220.0, "width": 200.0, "height": 18.0 },
+  { "text": "Round Off: 0.00", "left": 30.0, "top": 240.0, "width": 150.0, "height": 14.0 }
+]
+

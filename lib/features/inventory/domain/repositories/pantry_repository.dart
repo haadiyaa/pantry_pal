@@ -14,6 +14,7 @@ abstract class PantryRepository {
   });
   Future<int> countAll();
   Future<int> add(PantryItem item);
+  Future<void> addAll(List<PantryItem> items);
   Future<void> update(PantryItem item);
   Future<void> delete(int id);
 }

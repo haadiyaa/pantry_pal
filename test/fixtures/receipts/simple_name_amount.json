@@ -1,0 +1,12 @@
+[
+  { "text": "KIRANA STORE", "left": 120.0, "top": 15.0, "width": 120.0, "height": 18.0 },
+  { "text": "Tel: 9876543210", "left": 110.0, "top": 36.0, "width": 140.0, "height": 14.0 },
+  { "text": "Date: 15-Oct-2026", "left": 30.0, "top": 60.0, "width": 120.0, "height": 14.0 },
+  { "text": "Tata Salt 1kg Rs. 28.00", "left": 30.0, "top": 90.0, "width": 260.0, "height": 16.0 },
+  { "text": "Aashirvaad Atta 5kg ₹ 265.00", "left": 30.0, "top": 115.0, "width": 280.0, "height": 16.0 },
+  { "text": "Fortune Sunflower Oil 1L 145/-", "left": 30.0, "top": 140.0, "width": 270.0, "height": 16.0 },
+  { "text": "Total: 438.00", "left": 30.0, "top": 175.0, "width": 200.0, "height": 18.0 },
+  { "text": "Cash Paid: 500.00", "left": 30.0, "top": 198.0, "width": 180.0, "height": 15.0 },
+  { "text": "Change Due: 62.00", "left": 30.0, "top": 218.0, "width": 180.0, "height": 15.0 }
+]
+
