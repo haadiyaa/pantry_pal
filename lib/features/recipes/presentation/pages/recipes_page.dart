@@ -6,6 +6,7 @@ import '../../../inventory/domain/repositories/pantry_repository.dart';
 import '../../../inventory/presentation/bloc/inventory_bloc.dart';
 import '../../domain/constants/recipe_matcher_constants.dart';
 import '../../domain/repositories/recipe_repository.dart';
+import '../../domain/repositories/staples_repository.dart';
 import '../bloc/recipe_suggestions_bloc.dart';
 import '../bloc/recipe_suggestions_event.dart';
 import '../bloc/recipe_suggestions_state.dart';
@@ -16,10 +17,18 @@ class RecipesPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    StaplesRepository? staplesRepo;
+    try {
+      staplesRepo = context.read<StaplesRepository>();
+    } catch (_) {
+      staplesRepo = null;
+    }
+
     return BlocProvider(
       create: (context) => RecipeSuggestionsBloc(
         pantryRepository: context.read<PantryRepository>(),
         recipeRepository: context.read<RecipeRepository>(),
+        staplesRepository: staplesRepo,
       )..add(const RecipeSuggestionsStarted()),
       child: const _RecipesView(),
     );

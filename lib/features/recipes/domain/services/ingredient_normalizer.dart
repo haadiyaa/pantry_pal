@@ -1,3 +1,4 @@
+import '../../../inventory/domain/models/pantry_category.dart';
 import '../constants/recipe_matcher_constants.dart';
 
 /// Pure Dart normalizer that converts pantry item names or recipe ingredient names
@@ -42,10 +43,6 @@ class IngredientNormalizer {
     }
 
     if (filteredTokens.isEmpty) {
-      // Fallback to category if raw tokens were completely consumed by brand/noise
-      if (category != null && category.isNotEmpty && category != 'Other') {
-        return category.toLowerCase();
-      }
       return '';
     }
 
@@ -110,16 +107,210 @@ class IngredientNormalizer {
   }
 
   /// Checks if an ingredient is a standard kitchen staple (salt, oil, water, etc.)
+  /// Uses word-boundary matching to prevent false positives (e.g. "oil" must not match "boiled egg").
   static bool isStaple(String ingredientName) {
     final normalized = normalize(ingredientName);
+    if (normalized.isEmpty) return false;
+
     if (RecipeMatcherConstants.pantryStaples.contains(normalized)) {
       return true;
     }
     for (final staple in RecipeMatcherConstants.pantryStaples) {
-      if (normalized == staple || normalized.contains(staple)) {
+      if (normalized == staple) return true;
+      final pattern = RegExp(r'\b' + RegExp.escape(staple) + r'\b');
+      if (pattern.hasMatch(normalized)) {
         return true;
       }
     }
     return false;
+  }
+
+  /// Guesses the pantry category from an ingredient name using word-boundary tokens.
+  static PantryCategory guessCategory(String ingredientName) {
+    final lower = ingredientName.toLowerCase().trim();
+    final normalized = normalize(ingredientName);
+
+    // 1. Meat and Fish
+    for (final kw in RecipeMatcherConstants.meatKeywords) {
+      final pattern = RegExp(r'\b' + RegExp.escape(kw) + r'\b');
+      if (pattern.hasMatch(lower) || pattern.hasMatch(normalized)) {
+        return PantryCategory.meatAndFish;
+      }
+    }
+    const meatKeywordsExtra = [
+      'chicken',
+      'mutton',
+      'beef',
+      'pork',
+      'bacon',
+      'lamb',
+      'prawn',
+      'shrimp',
+      'fish',
+      'salmon',
+      'tuna',
+      'egg',
+      'eggs',
+      'turkey',
+      'duck',
+      'ham',
+      'sausage',
+    ];
+    for (final kw in meatKeywordsExtra) {
+      final pattern = RegExp(r'\b' + RegExp.escape(kw) + r'\b');
+      if (pattern.hasMatch(lower) || pattern.hasMatch(normalized)) {
+        return PantryCategory.meatAndFish;
+      }
+    }
+
+    // 2. Dairy
+    const dairyKeywords = [
+      'milk',
+      'butter',
+      'cheese',
+      'yogurt',
+      'yoghurt',
+      'dahi',
+      'curd',
+      'paneer',
+      'cream',
+      'ghee',
+      'buttermilk',
+      'mayonnaise',
+      'cottage cheese',
+    ];
+    for (final kw in dairyKeywords) {
+      final pattern = RegExp(r'\b' + RegExp.escape(kw) + r'\b');
+      if (pattern.hasMatch(lower) || pattern.hasMatch(normalized)) {
+        return PantryCategory.dairy;
+      }
+    }
+
+    // 3. Beverages
+    const beverageKeywords = [
+      'juice',
+      'tea',
+      'coffee',
+      'wine',
+      'beer',
+      'soda',
+      'cider',
+      'syrup',
+      'drink',
+    ];
+    for (final kw in beverageKeywords) {
+      final pattern = RegExp(r'\b' + RegExp.escape(kw) + r'\b');
+      if (pattern.hasMatch(lower) || pattern.hasMatch(normalized)) {
+        return PantryCategory.beverages;
+      }
+    }
+
+    // 4. Fruits
+    const fruitKeywords = [
+      'apple',
+      'banana',
+      'orange',
+      'lemon',
+      'lime',
+      'mango',
+      'berry',
+      'strawberry',
+      'blueberry',
+      'grape',
+      'grapes',
+      'pineapple',
+      'avocado',
+      'watermelon',
+      'coconut',
+      'papaya',
+      'peach',
+      'plum',
+      'pear',
+    ];
+    for (final kw in fruitKeywords) {
+      final pattern = RegExp(r'\b' + RegExp.escape(kw) + r'\b');
+      if (pattern.hasMatch(lower) || pattern.hasMatch(normalized)) {
+        return PantryCategory.fruits;
+      }
+    }
+    const vegKeywords = [
+      'onion',
+      'tomato',
+      'potato',
+      'carrot',
+      'capsicum',
+      'bell pepper',
+      'pepper',
+      'garlic',
+      'ginger',
+      'spinach',
+      'broccoli',
+      'cauliflower',
+      'cabbage',
+      'peas',
+      'mushroom',
+      'aubergine',
+      'brinjal',
+      'eggplant',
+      'cucumber',
+      'lettuce',
+      'coriander',
+      'cilantro',
+      'mint',
+      'chili',
+      'chilli',
+      'corn',
+      'zucchini',
+      'okra',
+      'bhindi',
+      'celery',
+      'kale',
+      'radish',
+      'beetroot',
+      'pumpkin',
+      'squash',
+      'scallion',
+      'leek',
+    ];
+    for (final kw in vegKeywords) {
+      final pattern = RegExp(r'\b' + RegExp.escape(kw) + r'\b');
+      if (pattern.hasMatch(lower) || pattern.hasMatch(normalized)) {
+        return PantryCategory.vegetables;
+      }
+    }
+
+    // 5. Grains
+    const grainKeywords = [
+      'rice',
+      'flour',
+      'atta',
+      'maida',
+      'wheat',
+      'oats',
+      'pasta',
+      'noodle',
+      'noodles',
+      'bread',
+      'spaghetti',
+      'quinoa',
+      'cereal',
+      'lentil',
+      'lentils',
+      'dal',
+      'dhal',
+      'chickpea',
+      'chickpeas',
+      'beans',
+      'macaroni',
+      'couscous',
+    ];
+    for (final kw in grainKeywords) {
+      final pattern = RegExp(r'\b' + RegExp.escape(kw) + r'\b');
+      if (pattern.hasMatch(lower) || pattern.hasMatch(normalized)) {
+        return PantryCategory.grains;
+      }
+    }
+
+    return PantryCategory.other;
   }
 }

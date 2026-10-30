@@ -29,7 +29,9 @@ import 'features/receipt/domain/services/text_recognizer.dart';
 
 import 'features/recipes/data/datasources/themealdb_remote_datasource.dart';
 import 'features/recipes/data/repositories/cached_recipe_repository.dart';
+import 'features/recipes/data/repositories/shared_preferences_staples_repository.dart';
 import 'features/recipes/domain/repositories/recipe_repository.dart';
+import 'features/recipes/domain/repositories/staples_repository.dart';
 
 void _handleNotificationPayload(String? payload) {
   if (payload == null || payload.isEmpty) return;
@@ -143,6 +145,9 @@ class PantryPalApp extends StatelessWidget {
         ),
         RepositoryProvider<RecipeRepository>.value(
           value: recipeRepository,
+        ),
+        RepositoryProvider<StaplesRepository>(
+          create: (_) => SharedPreferencesStaplesRepository(),
         ),
         RepositoryProvider<TextRecognizer>(
           create: (_) => MlKitTextRecognizer(),

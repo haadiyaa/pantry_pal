@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../domain/models/recipe_match.dart';
+import '../bloc/recipe_suggestions_bloc.dart';
+import '../bloc/recipe_suggestions_event.dart';
 
 class RecipeCard extends StatelessWidget {
   const RecipeCard({super.key, required this.match});
@@ -35,7 +38,16 @@ class RecipeCard extends StatelessWidget {
             : BorderSide(color: theme.colorScheme.outlineVariant.withAlpha(80)),
       ),
       child: InkWell(
-        onTap: () => context.push('/recipes/${recipe.id}'),
+        onTap: () async {
+          await context.push('/recipes/${recipe.id}');
+          if (context.mounted) {
+            try {
+              context
+                  .read<RecipeSuggestionsBloc>()
+                  .add(const RecipeSuggestionsRefreshed());
+            } catch (_) {}
+          }
+        },
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

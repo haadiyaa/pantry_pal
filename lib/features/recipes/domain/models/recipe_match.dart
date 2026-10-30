@@ -11,16 +11,24 @@ class RecipeMatch extends Equatable {
     required this.recipe,
     required this.matchedIngredients,
     required this.missingIngredients,
+    this.stapleIngredients = const [],
     required this.matchPercentage,
     required this.expiringItemsUsed,
     required this.score,
   });
 
   final Recipe recipe;
+
+  /// Ingredients matched to real pantry inventory items.
   final List<RecipeIngredient> matchedIngredients;
+
+  /// Ingredients missing from the pantry (and staples marked as unavailable).
   final List<RecipeIngredient> missingIngredients;
 
-  /// Match percentage expressed from 0.0 to 1.0 (excluding pantry staples).
+  /// Standard kitchen staples assumed to be available.
+  final List<RecipeIngredient> stapleIngredients;
+
+  /// Match percentage expressed from 0.0 to 1.0 (excluding assumed staples).
   final double matchPercentage;
 
   /// Pantry items expiring within 3 days that this recipe consumes.
@@ -35,14 +43,18 @@ class RecipeMatch extends Equatable {
   /// Total count of ingredients the user needs to acquire (excluding staples).
   int get missingCount => missingIngredients.length;
 
-  /// Total non-staple ingredients the user has on hand.
+  /// Total non-staple ingredients the user has on hand in their pantry.
   int get matchedCount => matchedIngredients.length;
+
+  /// Total available kitchen staples.
+  int get stapleCount => stapleIngredients.length;
 
   @override
   List<Object?> get props => [
         recipe,
         matchedIngredients,
         missingIngredients,
+        stapleIngredients,
         matchPercentage,
         expiringItemsUsed,
         score,

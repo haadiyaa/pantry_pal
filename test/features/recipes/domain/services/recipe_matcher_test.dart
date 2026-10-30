@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pantry_pal/features/inventory/domain/models/pantry_item.dart';
 import 'package:pantry_pal/features/recipes/domain/models/recipe.dart';
 import 'package:pantry_pal/features/recipes/domain/models/recipe_ingredient.dart';
+import 'package:pantry_pal/features/recipes/domain/models/recipe_ingredient_status.dart';
 import 'package:pantry_pal/features/recipes/domain/services/recipe_matcher.dart';
 
 void main() {
@@ -51,7 +52,8 @@ void main() {
       expect(matches.length, 1);
       final match = matches.first;
       expect(match.matchPercentage, 1.0);
-      expect(match.matchedCount, 4); // paneer, spinach + 2 staples
+      expect(match.matchedCount, 2); // paneer, spinach matched in pantry
+      expect(match.stapleCount, 2); // salt, water are kitchen staples, NOT labelled in-pantry
       expect(match.missingCount, 0);
       expect(match.expiringItemsUsed, isEmpty);
     });
@@ -306,6 +308,176 @@ void main() {
       );
       expect(singleMatch.length, 1);
       expect(singleMatch.first.matchPercentage, 1.0);
+    });
+
+    test('only-staples recipe with empty pantry has 0 in-pantry and shows Staples', () {
+      const stapleOnlyRecipe = Recipe(
+        id: '500',
+        name: 'Salt Water Solution',
+        category: 'Other',
+        area: 'Unknown',
+        instructions: 'Mix salt with water and oil.',
+        ingredients: [
+          RecipeIngredient(name: 'Salt', measure: '1 tsp'),
+          RecipeIngredient(name: 'Water', measure: '1 cup'),
+          RecipeIngredient(name: 'Cooking Oil', measure: '1 tbsp'),
+        ],
+      );
+
+      final matches = RecipeMatcher.matchAndRank(
+        pantryItems: const [],
+        candidateRecipes: [stapleOnlyRecipe],
+        now: fixedNow,
+      );
+
+      expect(matches.length, 1);
+      final match = matches.first;
+      expect(match.matchedCount, 0); // Empty pantry: 0 in pantry!
+      expect(match.stapleCount, 3);
+      expect(match.missingCount, 0);
+      expect(match.matchPercentage, 1.0);
+
+      // In evaluateDetail:
+      final detail = RecipeMatcher.evaluateDetail(
+        recipe: stapleOnlyRecipe,
+        pantryItems: const [],
+        now: fixedNow,
+      );
+      expect(detail.inPantryCount, 0);
+      expect(detail.stapleCount, 3);
+      expect(detail.availableCount, 3);
+      expect(detail.summaryText, 'You have 3 of 3 ingredients');
+      for (final item in detail.items) {
+        expect(item.status, RecipeIngredientStatus.staple);
+      }
+    });
+
+    test('word boundary matching prevents substring false positives (oil != boiled egg, pea != peanut)', () {
+      final pantryWithOil = [
+        PantryItem(
+          id: 1,
+          name: 'Cooking Oil',
+          quantity: 1,
+          category: 'Other',
+          expiryDate: DateTime(2026, 12, 1),
+          addedAt: fixedNow,
+        ),
+        PantryItem(
+          id: 2,
+          name: 'Green Peas',
+          quantity: 1,
+          category: 'Vegetables',
+          expiryDate: DateTime(2026, 12, 1),
+          addedAt: fixedNow,
+        ),
+      ];
+
+      const eggAndPeanutRecipe = Recipe(
+        id: '600',
+        name: 'Boiled Egg Peanut Salad',
+        category: 'Salad',
+        area: 'International',
+        instructions: 'Mix boiled eggs and peanuts.',
+        ingredients: [
+          RecipeIngredient(name: 'Boiled Egg', measure: '2'),
+          RecipeIngredient(name: 'Peanut', measure: '50g'),
+        ],
+      );
+
+      final matches = RecipeMatcher.matchAndRank(
+        pantryItems: pantryWithOil,
+        candidateRecipes: [eggAndPeanutRecipe],
+        now: fixedNow,
+      );
+
+      expect(matches.length, 1);
+      final match = matches.first;
+      // "oil" must NOT match "boiled egg"
+      // "peas" must NOT match "peanut"
+      expect(match.matchedCount, 0);
+      expect(match.missingCount, 2);
+      expect(match.matchPercentage, 0.0);
+    });
+
+    test('curd in pantry matches recipe calling for yogurt', () {
+      final pantry = [
+        PantryItem(
+          id: 1,
+          name: 'Amul Curd 500g',
+          quantity: 1,
+          category: 'Dairy',
+          expiryDate: DateTime(2026, 11, 5),
+          addedAt: fixedNow,
+        ),
+      ];
+
+      const recipe = Recipe(
+        id: '700',
+        name: 'Yogurt Dip',
+        category: 'Side',
+        area: 'Greek',
+        instructions: 'Mix yogurt with garlic.',
+        ingredients: [
+          RecipeIngredient(name: 'Greek Yogurt', measure: '1 cup'),
+        ],
+      );
+
+      final matches = RecipeMatcher.matchAndRank(
+        pantryItems: pantry,
+        candidateRecipes: [recipe],
+        now: fixedNow,
+      );
+
+      expect(matches.length, 1);
+      expect(matches.first.matchedCount, 1);
+      expect(matches.first.matchPercentage, 1.0);
+    });
+
+    test('globally unavailable staples count as missing and reduce match percentage', () {
+      final pantry = [
+        PantryItem(
+          id: 1,
+          name: 'Pasta',
+          quantity: 1,
+          category: 'Grains',
+          expiryDate: DateTime(2026, 11, 10),
+          addedAt: fixedNow,
+        ),
+      ];
+
+      const recipe = Recipe(
+        id: '800',
+        name: 'Simple Pasta',
+        category: 'Pasta',
+        area: 'Italian',
+        instructions: 'Boil pasta, add oil and salt.',
+        ingredients: [
+          RecipeIngredient(name: 'Pasta', measure: '200g'),
+          RecipeIngredient(name: 'Cooking Oil', measure: '2 tbsp'),
+          RecipeIngredient(name: 'Salt', measure: '1 tsp'),
+        ],
+      );
+
+      // Without overrides: 1 non-staple (pasta) in pantry, 2 available staples = 100%
+      final matchesNormal = RecipeMatcher.matchAndRank(
+        pantryItems: pantry,
+        candidateRecipes: [recipe],
+        now: fixedNow,
+      );
+      expect(matchesNormal.first.matchPercentage, 1.0);
+
+      // User marked "oil" as unavailable:
+      final matchesWithOverride = RecipeMatcher.matchAndRank(
+        pantryItems: pantry,
+        candidateRecipes: [recipe],
+        now: fixedNow,
+        unavailableStaples: {'oil'},
+      );
+      final match = matchesWithOverride.first;
+      // Pasta is in pantry (1), Cooking Oil is now missing (1), Salt is staple (1)
+      // Non-staples: Pasta (matched), Cooking Oil (missing) -> 1 of 2 = 50%
+      expect(match.matchPercentage, 0.5);
+      expect(match.missingIngredients.map((i) => i.name), contains('Cooking Oil'));
     });
   });
 }

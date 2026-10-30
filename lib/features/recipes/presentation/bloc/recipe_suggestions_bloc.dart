@@ -4,6 +4,7 @@ import 'package:stream_transform/stream_transform.dart';
 import '../../../inventory/domain/repositories/pantry_repository.dart';
 import '../../domain/models/recipe_match.dart';
 import '../../domain/repositories/recipe_repository.dart';
+import '../../domain/repositories/staples_repository.dart';
 import '../../domain/services/recipe_matcher.dart';
 import 'recipe_suggestions_event.dart';
 import 'recipe_suggestions_state.dart';
@@ -17,6 +18,7 @@ class RecipeSuggestionsBloc
   RecipeSuggestionsBloc({
     required this.pantryRepository,
     required this.recipeRepository,
+    this.staplesRepository,
     DateTime Function()? nowProvider,
   })  : _nowProvider = nowProvider ?? DateTime.now,
         super(const RecipeSuggestionsState()) {
@@ -34,6 +36,7 @@ class RecipeSuggestionsBloc
 
   final PantryRepository pantryRepository;
   final RecipeRepository recipeRepository;
+  final StaplesRepository? staplesRepository;
   final DateTime Function() _nowProvider;
 
   Future<void> _onStarted(
@@ -83,10 +86,19 @@ class RecipeSuggestionsBloc
         forceRefresh: forceRefresh,
       );
 
+      final unavailableStaples = staplesRepository != null
+          ? await staplesRepository!.getUnavailableStaples()
+          : const <String>{};
+
+      // DESIGN DECISION: The suggestions list ranking and card percentages use only real
+      // pantry matches plus the global staple settings. They do not use per-recipe temporary
+      // marks so that suggestion cards never unpredictably shift positions or disagree with
+      // the rest of the feed without reason.
       final matches = RecipeMatcher.matchAndRank(
         pantryItems: activeItems,
         candidateRecipes: queryResult.recipes,
         now: _nowProvider(),
+        unavailableStaples: unavailableStaples,
       );
 
       final filtered = _applyFilters(
@@ -188,10 +200,15 @@ class RecipeSuggestionsBloc
     // Re-match against existing candidate recipes without new network storm
     final existingRecipes = state.allMatches.map((m) => m.recipe).toList();
     if (existingRecipes.isNotEmpty) {
+      final unavailableStaples = staplesRepository != null
+          ? await staplesRepository!.getUnavailableStaples()
+          : const <String>{};
+
       final updatedMatches = RecipeMatcher.matchAndRank(
         pantryItems: activeItems,
         candidateRecipes: existingRecipes,
         now: _nowProvider(),
+        unavailableStaples: unavailableStaples,
       );
 
       final filtered = _applyFilters(

@@ -41,10 +41,10 @@ void main() {
       expect(IngredientNormalizer.normalize('Rajma'), 'kidney beans');
     });
 
-    test('falls back to category when product name contains only brand or noise', () {
+    test('never falls back to category to prevent false recipe matches', () {
       expect(
         IngredientNormalizer.normalize('Amul 500g', category: 'Dairy'),
-        'dairy',
+        '',
       );
     });
 
@@ -55,15 +55,27 @@ void main() {
       expect(IngredientNormalizer.normalize('12345 6789'), '');
     });
 
-    test('isStaple correctly identifies standard kitchen staples', () {
+    test('isStaple correctly identifies standard kitchen staples without false positives', () {
       expect(IngredientNormalizer.isStaple('Salt'), isTrue);
       expect(IngredientNormalizer.isStaple('Sea Salt'), isTrue);
-      expect(IngredientNormalizer.isStaple('Water'), isTrue);
       expect(IngredientNormalizer.isStaple('Olive Oil'), isTrue);
-      expect(IngredientNormalizer.isStaple('Black Pepper'), isTrue);
-      expect(IngredientNormalizer.isStaple('Chicken Breast'), isFalse);
-      expect(IngredientNormalizer.isStaple('Paneer'), isFalse);
-      expect(IngredientNormalizer.isStaple('Strawberries'), isFalse);
+      expect(IngredientNormalizer.isStaple('Cooking Oil'), isTrue);
+      expect(IngredientNormalizer.isStaple('Water'), isTrue);
+
+      // Word boundary protections: "oil" must never match "boiled egg"
+      expect(IngredientNormalizer.isStaple('Boiled Egg'), isFalse);
+      expect(IngredientNormalizer.isStaple('Egg'), isFalse);
+      expect(IngredientNormalizer.isStaple('Peanut'), isFalse);
+      expect(IngredientNormalizer.isStaple('Watermelon'), isFalse);
+    });
+
+    test('guessCategory accurately infers pantry category', () {
+      expect(IngredientNormalizer.guessCategory('Chicken Breast').label, 'Meat and Fish');
+      expect(IngredientNormalizer.guessCategory('Amul Butter').label, 'Dairy');
+      expect(IngredientNormalizer.guessCategory('Red Apple').label, 'Fruits');
+      expect(IngredientNormalizer.guessCategory('Bell Pepper').label, 'Vegetables');
+      expect(IngredientNormalizer.guessCategory('Basmati Rice').label, 'Grains');
+      expect(IngredientNormalizer.guessCategory('Orange Juice').label, 'Beverages');
     });
   });
 }
