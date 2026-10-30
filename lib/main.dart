@@ -21,6 +21,12 @@ import 'features/product_lookup/data/repositories/cached_product_lookup_reposito
 import 'features/product_lookup/domain/repositories/product_lookup_repository.dart';
 import 'features/product_lookup/presentation/bloc/product_lookup_bloc.dart';
 
+import 'features/receipt/data/services/app_image_picker_service.dart';
+import 'features/receipt/data/services/mlkit_text_recognizer.dart';
+import 'features/receipt/domain/services/image_picker_service.dart';
+import 'features/receipt/domain/services/receipt_parser.dart';
+import 'features/receipt/domain/services/text_recognizer.dart';
+
 void _handleNotificationPayload(String? payload) {
   if (payload == null || payload.isEmpty) return;
 
@@ -118,6 +124,15 @@ class PantryPalApp extends StatelessWidget {
         ),
         RepositoryProvider<NotificationSyncService>.value(
           value: notificationSyncService,
+        ),
+        RepositoryProvider<TextRecognizer>(
+          create: (_) => MlKitTextRecognizer(),
+        ),
+        RepositoryProvider<ReceiptParser>(
+          create: (_) => const ReceiptParser(),
+        ),
+        RepositoryProvider<ImagePickerService>(
+          create: (_) => AppImagePickerService(),
         ),
       ],
       child: MultiBlocProvider(

@@ -7,6 +7,9 @@ import '../../features/inventory/presentation/pages/inventory_page.dart';
 import '../../features/inventory/presentation/pages/item_form_page.dart';
 import '../../features/notifications/presentation/pages/notification_settings_page.dart';
 import '../../features/product_lookup/presentation/pages/scanner_page.dart';
+import '../../features/receipt/domain/models/receipt_draft.dart';
+import '../../features/receipt/presentation/pages/receipt_review_page.dart';
+import '../../features/receipt/presentation/pages/receipt_scan_page.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/',
@@ -36,6 +39,19 @@ final appRouter = GoRouter(
       path: '/scan',
       name: 'scanner',
       builder: (context, state) => const ScannerPage(),
+    ),
+    GoRoute(
+      path: '/receipt',
+      name: 'receipt-scan',
+      builder: (context, state) => const ReceiptScanPage(),
+    ),
+    GoRoute(
+      path: '/receipt/review',
+      name: 'receipt-review',
+      builder: (context, state) {
+        final draft = state.extra as ReceiptDraft?;
+        return ReceiptReviewPage(draft: draft);
+      },
     ),
     GoRoute(
       path: '/item/new',

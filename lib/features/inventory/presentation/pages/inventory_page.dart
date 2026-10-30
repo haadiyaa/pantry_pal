@@ -240,6 +240,14 @@ class InventoryPage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           FloatingActionButton.small(
+            heroTag: 'receipt_fab',
+            key: const Key('scan_receipt_fab'),
+            tooltip: 'Add from receipt',
+            onPressed: () => context.push('/receipt'),
+            child: const Icon(Icons.receipt_long),
+          ),
+          const SizedBox(height: 12),
+          FloatingActionButton.small(
             heroTag: 'scan_fab',
             key: const Key('scan_barcode_fab'),
             tooltip: 'Scan barcode',
