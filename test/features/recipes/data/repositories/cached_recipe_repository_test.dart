@@ -62,7 +62,7 @@ void main() {
 
     test('cache hit: returns cached recipes without invoking remote data source', () async {
       final db = await appDb.database;
-      final oneHourAgo = now.subtract(const Duration(hours: 1)).millisecondsSinceEpoch;
+      final oneHourAgo = DateTime.now().subtract(const Duration(hours: 1)).millisecondsSinceEpoch;
 
       // Seed fresh ingredient search cache
       await db.insert(AppDatabase.tableIngredientSearchCache, {

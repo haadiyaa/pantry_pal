@@ -56,6 +56,12 @@ class InventoryPage extends StatelessWidget {
             },
           ),
           IconButton(
+            key: const Key('stats_button'),
+            icon: const Icon(Icons.bar_chart),
+            tooltip: 'Waste Statistics',
+            onPressed: () => context.push('/stats'),
+          ),
+          IconButton(
             key: const Key('settings_button'),
             icon: const Icon(Icons.settings_outlined),
             tooltip: 'Notification Settings',

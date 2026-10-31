@@ -40,6 +40,12 @@ import 'features/shopping/domain/repositories/shopping_settings_repository.dart'
 import 'features/shopping/presentation/cubit/shopping_badge_cubit.dart';
 import 'features/shopping/presentation/cubit/shopping_settings_cubit.dart';
 
+import 'features/stats/data/repositories/shared_preferences_stats_period_repository.dart';
+import 'features/stats/data/repositories/sqlite_stats_repository.dart';
+import 'features/stats/domain/repositories/stats_period_repository.dart';
+import 'features/stats/domain/repositories/stats_repository.dart';
+import 'features/stats/presentation/cubit/stats_cubit.dart';
+
 void _handleNotificationPayload(String? payload) {
   if (payload == null || payload.isEmpty) return;
 
@@ -97,6 +103,8 @@ Future<void> main() async {
 
   final shoppingRepo = SqliteShoppingRepository(appDb);
   final shoppingSettingsRepo = SharedPreferencesShoppingSettingsRepository();
+  final statsRepo = SqliteStatsRepository(appDb);
+  final statsPeriodRepo = SharedPreferencesStatsPeriodRepository();
 
   // 4. Handle cold-launch from notification tap
   final coldLaunchPayload = await scheduler.getLaunchPayload();
@@ -116,6 +124,8 @@ Future<void> main() async {
       recipeRepository: recipeRepo,
       shoppingRepository: shoppingRepo,
       shoppingSettingsRepository: shoppingSettingsRepo,
+      statsRepository: statsRepo,
+      statsPeriodRepository: statsPeriodRepo,
     ),
   );
 }
@@ -131,6 +141,8 @@ class PantryPalApp extends StatelessWidget {
     required this.recipeRepository,
     required this.shoppingRepository,
     required this.shoppingSettingsRepository,
+    required this.statsRepository,
+    required this.statsPeriodRepository,
   });
 
   final PantryRepository pantryRepository;
@@ -141,6 +153,8 @@ class PantryPalApp extends StatelessWidget {
   final RecipeRepository recipeRepository;
   final ShoppingRepository shoppingRepository;
   final ShoppingSettingsRepository shoppingSettingsRepository;
+  final StatsRepository statsRepository;
+  final StatsPeriodRepository statsPeriodRepository;
 
   @override
   Widget build(BuildContext context) {
@@ -167,6 +181,12 @@ class PantryPalApp extends StatelessWidget {
         ),
         RepositoryProvider<ShoppingSettingsRepository>.value(
           value: shoppingSettingsRepository,
+        ),
+        RepositoryProvider<StatsRepository>.value(
+          value: statsRepository,
+        ),
+        RepositoryProvider<StatsPeriodRepository>.value(
+          value: statsPeriodRepository,
         ),
         RepositoryProvider<StaplesRepository>(
           create: (_) => SharedPreferencesStaplesRepository(),
@@ -208,6 +228,12 @@ class PantryPalApp extends StatelessWidget {
           ),
           BlocProvider(
             create: (_) => ShoppingSettingsCubit(shoppingSettingsRepository),
+          ),
+          BlocProvider(
+            create: (_) => StatsCubit(
+              statsRepository: statsRepository,
+              periodRepository: statsPeriodRepository,
+            )..init(),
           ),
         ],
         child: MaterialApp.router(

@@ -15,6 +15,8 @@ import '../../features/recipes/presentation/pages/recipes_page.dart';
 import '../../features/shopping/domain/models/shopping_item.dart';
 import '../../features/shopping/presentation/pages/shopping_batch_review_page.dart';
 import '../../features/shopping/presentation/pages/shopping_list_page.dart';
+import '../../features/stats/presentation/cubit/stats_cubit.dart';
+import '../../features/stats/presentation/pages/stats_page.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/',
@@ -82,6 +84,14 @@ final appRouter = GoRouter(
       builder: (context, state) {
         final bought = state.extra as List<ShoppingItem>?;
         return ShoppingBatchReviewPage(boughtItems: bought);
+      },
+    ),
+    GoRoute(
+      path: '/stats',
+      name: 'stats',
+      builder: (context, state) {
+        context.read<StatsCubit>().refresh();
+        return const StatsPage();
       },
     ),
     GoRoute(
