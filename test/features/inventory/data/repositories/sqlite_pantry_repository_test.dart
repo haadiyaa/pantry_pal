@@ -132,6 +132,22 @@ void main() {
       expect((await repository.getAll()), isEmpty);
     });
 
+    test('delete completely removes item from database regardless of quantity (> 1)', () async {
+      final item = PantryItem(
+        name: 'Spaghetti',
+        quantity: 3,
+        category: 'Grains',
+        expiryDate: now.add(const Duration(days: 6)),
+        addedAt: now,
+      );
+
+      final id = await repository.add(item);
+      expect((await repository.getAll()).length, 1);
+
+      await repository.delete(id);
+      expect((await repository.getAll()), isEmpty);
+    });
+
     test('getExpiringWithin returns only items expiring on or before cutoff',
         () async {
       final expiringTomorrow = PantryItem(

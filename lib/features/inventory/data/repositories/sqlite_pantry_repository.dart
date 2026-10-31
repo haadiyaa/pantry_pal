@@ -169,17 +169,32 @@ class SqlitePantryRepository implements PantryRepository {
 
   @override
   Future<void> delete(int id) async {
+    final db = await _appDb.database;
     final item = await getById(id);
-    if (item != null) {
-      await consume(
-        item: item,
-        reason: PantryEventReason.deleted,
-        addToShoppingList: false,
-      );
-    } else {
-      final db = await _appDb.database;
+    if (item == null) {
       await db.delete(_table, where: 'id = ?', whereArgs: [id]);
+      return;
     }
+
+    await db.transaction((txn) async {
+      // Completely remove the row regardless of quantity
+      await txn.delete(_table, where: 'id = ?', whereArgs: [id]);
+
+      // Record a single event with reason 'deleted' for the entire item
+      final now = DateTime.now();
+      await txn.insert(
+        AppDatabase.tablePantryEvents,
+        {
+          'item_name': item.name,
+          'category': item.category,
+          'quantity': item.quantity,
+          'price_paise': item.priceInPaise,
+          'expiry_date': item.expiryDate.millisecondsSinceEpoch,
+          'reason': PantryEventReason.deleted.storageKey,
+          'occurred_at': now.millisecondsSinceEpoch,
+        },
+      );
+    });
   }
 
   @override
