@@ -20,3 +20,4 @@ class ApiKeys {
     defaultValue: 'https://world.openfoodfacts.org/api/v2/product',
   );
 }
+
