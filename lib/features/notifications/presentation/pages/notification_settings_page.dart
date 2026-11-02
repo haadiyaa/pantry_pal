@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -20,9 +22,11 @@ class NotificationSettingsPage extends StatelessWidget {
     );
 
     if (picked != null && context.mounted) {
-      context
-          .read<NotificationSettingsCubit>()
-          .updateReminderTime(picked.hour, picked.minute);
+      unawaited(
+        context
+            .read<NotificationSettingsCubit>()
+            .updateReminderTime(picked.hour, picked.minute),
+      );
     }
   }
 
@@ -106,9 +110,9 @@ class NotificationSettingsPage extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      FilledButton.tonal(
+                      const FilledButton.tonal(
                         onPressed: openAppSettings,
-                        child: const Text('Open Device Settings'),
+                        child: Text('Open Device Settings'),
                       ),
                     ],
                   ),

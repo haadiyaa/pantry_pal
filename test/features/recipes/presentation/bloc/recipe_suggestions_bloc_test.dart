@@ -254,16 +254,16 @@ void main() {
       seed: () => const RecipeSuggestionsState(),
       act: (bloc) async {
         bloc.add(const RecipeSuggestionsStarted());
-        await Future.delayed(const Duration(milliseconds: 50));
+        await Future<void>.delayed(const Duration(milliseconds: 50));
         // Toggle Vegetarian: recipeChicken filtered out, only recipeVeg remains
         bloc.add(const RecipeSuggestionsVegetarianToggled());
-        await Future.delayed(const Duration(milliseconds: 50));
+        await Future<void>.delayed(const Duration(milliseconds: 50));
         // Toggle Vegetarian back off
         bloc.add(const RecipeSuggestionsVegetarianToggled());
-        await Future.delayed(const Duration(milliseconds: 50));
+        await Future<void>.delayed(const Duration(milliseconds: 50));
         // Toggle Expiring only: only recipeChicken remains (uses expiring chicken)
         bloc.add(const RecipeSuggestionsExpiringOnlyToggled());
-        await Future.delayed(const Duration(milliseconds: 50));
+        await Future<void>.delayed(const Duration(milliseconds: 50));
         // Set Min Match to 75%+: recipeChicken (100%) remains, recipeVeg (33%) excluded
         bloc.add(const RecipeSuggestionsExpiringOnlyToggled());
         bloc.add(const RecipeSuggestionsMinMatchChanged(0.75));

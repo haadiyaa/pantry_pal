@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../domain/models/shopping_item.dart';
 import '../../domain/repositories/shopping_repository.dart';
 
 /// Lightweight Cubit that streams only the count of unchecked shopping items.
@@ -17,7 +18,7 @@ class ShoppingBadgeCubit extends Cubit<int> {
   }
 
   final ShoppingRepository _repository;
-  StreamSubscription? _subscription;
+  StreamSubscription<List<ShoppingItem>>? _subscription;
 
   @override
   Future<void> close() {

@@ -148,8 +148,8 @@ class _ItemFormView extends StatelessWidget {
                       children: [
                         Icon(Icons.delete_outline,
                             color: theme.colorScheme.error),
-                        SizedBox(width: 8),
-                        Text('Delete'),
+                        const SizedBox(width: 8),
+                        const Text('Delete'),
                       ],
                     ),
                   ),

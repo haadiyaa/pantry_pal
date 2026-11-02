@@ -6,21 +6,28 @@ import '../../features/inventory/presentation/bloc/inventory_bloc.dart';
 import '../../features/inventory/presentation/pages/inventory_page.dart';
 import '../../features/inventory/presentation/pages/item_form_page.dart';
 import '../../features/notifications/presentation/pages/notification_settings_page.dart';
+import '../../features/onboarding/presentation/pages/onboarding_page.dart';
 import '../../features/product_lookup/presentation/pages/scanner_page.dart';
 import '../../features/receipt/domain/models/receipt_draft.dart';
 import '../../features/receipt/presentation/pages/receipt_review_page.dart';
 import '../../features/receipt/presentation/pages/receipt_scan_page.dart';
 import '../../features/recipes/presentation/pages/recipe_detail_page.dart';
 import '../../features/recipes/presentation/pages/recipes_page.dart';
+import '../../features/settings/presentation/pages/settings_page.dart';
 import '../../features/shopping/domain/models/shopping_item.dart';
 import '../../features/shopping/presentation/pages/shopping_batch_review_page.dart';
 import '../../features/shopping/presentation/pages/shopping_list_page.dart';
 import '../../features/stats/presentation/cubit/stats_cubit.dart';
 import '../../features/stats/presentation/pages/stats_page.dart';
 
-final appRouter = GoRouter(
-  initialLocation: '/',
+GoRouter createAppRouter({String initialLocation = '/'}) => GoRouter(
+  initialLocation: initialLocation,
   routes: [
+    GoRoute(
+      path: '/onboarding',
+      name: 'onboarding',
+      builder: (context, state) => const OnboardingPage(),
+    ),
     GoRoute(
       path: '/',
       name: 'inventory',
@@ -40,7 +47,14 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/settings',
       name: 'settings',
-      builder: (context, state) => const NotificationSettingsPage(),
+      builder: (context, state) => const SettingsPage(),
+      routes: [
+        GoRoute(
+          path: 'notifications',
+          name: 'notifications-settings',
+          builder: (context, state) => const NotificationSettingsPage(),
+        ),
+      ],
     ),
     GoRoute(
       path: '/scan',
@@ -113,3 +127,5 @@ final appRouter = GoRouter(
     ),
   ],
 );
+
+final appRouter = createAppRouter();

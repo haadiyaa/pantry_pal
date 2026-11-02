@@ -295,11 +295,11 @@ void main() {
     });
 
     test('top items merges synonyms by normalized name (Curd and Yogurt)', () {
-      final rawData = StatsRawData(
-        reasonAggregates: const [],
-        wastedCategoryAggregates: const [],
-        usedItemAggregates: const [],
-        wastedItemAggregates: const [
+      const rawData = StatsRawData(
+        reasonAggregates: [],
+        wastedCategoryAggregates: [],
+        usedItemAggregates: [],
+        wastedItemAggregates: [
           ItemAggregate(
             itemName: 'Greek Yogurt',
             totalUnits: 3,
@@ -319,7 +319,7 @@ void main() {
             pricedUnits: 1,
           ),
         ],
-        eventRecords: const [],
+        eventRecords: [],
       );
 
       final summary = calculator.calculate(

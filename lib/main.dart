@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
@@ -16,6 +19,8 @@ import 'features/notifications/domain/repositories/notification_settings_reposit
 import 'features/notifications/domain/services/notification_scheduler.dart';
 import 'features/notifications/domain/services/notification_sync_service.dart';
 import 'features/notifications/presentation/cubit/notification_settings_cubit.dart';
+import 'features/onboarding/data/repositories/shared_preferences_onboarding_repository.dart';
+import 'features/onboarding/domain/repositories/onboarding_repository.dart';
 import 'features/product_lookup/data/datasources/open_food_facts_api.dart';
 import 'features/product_lookup/data/repositories/cached_product_lookup_repository.dart';
 import 'features/product_lookup/domain/repositories/product_lookup_repository.dart';
@@ -32,6 +37,9 @@ import 'features/recipes/data/repositories/cached_recipe_repository.dart';
 import 'features/recipes/data/repositories/shared_preferences_staples_repository.dart';
 import 'features/recipes/domain/repositories/recipe_repository.dart';
 import 'features/recipes/domain/repositories/staples_repository.dart';
+
+import 'features/settings/data/services/sqlite_user_data_service.dart';
+import 'features/settings/domain/services/user_data_service.dart';
 
 import 'features/shopping/data/repositories/shared_preferences_shopping_settings_repository.dart';
 import 'features/shopping/data/repositories/sqlite_shopping_repository.dart';
@@ -59,6 +67,24 @@ void _handleNotificationPayload(String? payload) {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Global Error Boundary (no 3rd-party tracking; local log + graceful release fallback)
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+    debugPrint('[FlutterError] ${details.exceptionAsString()}');
+  };
+
+  PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
+    debugPrint('[PlatformDispatcher] Unhandled error: $error\n$stack');
+    return true;
+  };
+
+  ErrorWidget.builder = (FlutterErrorDetails details) {
+    if (kDebugMode) {
+      return ErrorWidget(details.exception);
+    }
+    return _GlobalErrorFallback(details: details);
+  };
 
   // 1. Initialize timezone support
   tz.initializeTimeZones();
@@ -97,14 +123,19 @@ Future<void> main() async {
     appDb: appDb,
     remoteDataSource: recipeRemoteDataSource,
   );
-  recipeRepo.cleanOldCache().catchError((e) {
-    debugPrint('Failed to clean old recipe cache: $e');
-  });
+  unawaited(
+    recipeRepo.cleanOldCache().catchError((Object e) {
+      debugPrint('Failed to clean old recipe cache: $e');
+    }),
+  );
 
   final shoppingRepo = SqliteShoppingRepository(appDb);
   final shoppingSettingsRepo = SharedPreferencesShoppingSettingsRepository();
   final statsRepo = SqliteStatsRepository(appDb);
   final statsPeriodRepo = SharedPreferencesStatsPeriodRepository();
+  final onboardingRepo = SharedPreferencesOnboardingRepository();
+  final isOnboardingCompleted = await onboardingRepo.isOnboardingCompleted();
+  final userDataService = SqliteUserDataService(appDb);
 
   // 4. Handle cold-launch from notification tap
   final coldLaunchPayload = await scheduler.getLaunchPayload();
@@ -126,6 +157,9 @@ Future<void> main() async {
       shoppingSettingsRepository: shoppingSettingsRepo,
       statsRepository: statsRepo,
       statsPeriodRepository: statsPeriodRepo,
+      onboardingRepository: onboardingRepo,
+      userDataService: userDataService,
+      initialLocation: isOnboardingCompleted ? '/' : '/onboarding',
     ),
   );
 }
@@ -143,6 +177,9 @@ class PantryPalApp extends StatelessWidget {
     required this.shoppingSettingsRepository,
     required this.statsRepository,
     required this.statsPeriodRepository,
+    this.onboardingRepository,
+    this.userDataService,
+    this.initialLocation = '/',
   });
 
   final PantryRepository pantryRepository;
@@ -155,6 +192,9 @@ class PantryPalApp extends StatelessWidget {
   final ShoppingSettingsRepository shoppingSettingsRepository;
   final StatsRepository statsRepository;
   final StatsPeriodRepository statsPeriodRepository;
+  final OnboardingRepository? onboardingRepository;
+  final UserDataService? userDataService;
+  final String initialLocation;
 
   @override
   Widget build(BuildContext context) {
@@ -187,6 +227,14 @@ class PantryPalApp extends StatelessWidget {
         ),
         RepositoryProvider<StatsPeriodRepository>.value(
           value: statsPeriodRepository,
+        ),
+        RepositoryProvider<OnboardingRepository>(
+          create: (_) =>
+              onboardingRepository ?? SharedPreferencesOnboardingRepository(),
+        ),
+        RepositoryProvider<UserDataService>(
+          create: (_) =>
+              userDataService ?? SqliteUserDataService(AppDatabase.instance),
         ),
         RepositoryProvider<StaplesRepository>(
           create: (_) => SharedPreferencesStaplesRepository(),
@@ -248,7 +296,66 @@ class PantryPalApp extends StatelessWidget {
             colorSchemeSeed: Colors.green,
             brightness: Brightness.dark,
           ),
-          routerConfig: appRouter,
+          routerConfig: createAppRouter(initialLocation: initialLocation),
+        ),
+      ),
+    );
+  }
+}
+
+class _GlobalErrorFallback extends StatelessWidget {
+  const _GlobalErrorFallback({required this.details});
+
+  final FlutterErrorDetails details;
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.error_outline,
+                    color: Colors.redAccent,
+                    size: 64,
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Something went wrong',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'An unexpected error occurred. You can return to your pantry safely.',
+                    style: TextStyle(fontSize: 14, color: Colors.grey),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  FilledButton.icon(
+                    onPressed: () {
+                      if (appRouter.canPop()) {
+                        appRouter.pop();
+                      } else {
+                        appRouter.go('/');
+                      }
+                    },
+                    icon: const Icon(Icons.home),
+                    label: const Text('Return to Pantry'),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );

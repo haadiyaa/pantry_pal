@@ -22,7 +22,7 @@ class StatsSampleDataGenerator {
     final events = <PantryEvent>[];
     final random = Random(42); // Fixed seed for reproducible realistic screenshots
 
-    final sampleCatalog = [
+    const sampleCatalog = [
       _SampleTemplate('Amul Gold Milk', 'Dairy', 3400, 3),
       _SampleTemplate('Greek Yogurt', 'Dairy', 5000, 7),
       _SampleTemplate('Curd', 'Dairy', 4000, 5),

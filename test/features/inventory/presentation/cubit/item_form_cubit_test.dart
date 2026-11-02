@@ -173,7 +173,7 @@ void main() {
               priceError: () => 'Invalid price',
             ),
         act: (cubit) => cubit.submit(),
-        expect: () => [],
+        expect: () => <ItemFormState>[],
         verify: (_) {
           verifyNever(() => repository.add(any()));
           verifyNever(() => repository.update(any()));

@@ -119,10 +119,10 @@ class _ReceiptScanView extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 12),
-                          FilledButton.tonal(
-                            key: const Key('open_camera_settings_button'),
+                          const FilledButton.tonal(
+                            key: Key('open_camera_settings_button'),
                             onPressed: openAppSettings,
-                            child: const Text('Open Device Settings'),
+                            child: Text('Open Device Settings'),
                           ),
                         ],
                       ),

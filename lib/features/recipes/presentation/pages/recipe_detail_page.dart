@@ -486,7 +486,7 @@ class _RecipeDetailView extends StatelessWidget {
                       );
                       await context.push('/item/new', extra: prefilled);
                       if (context.mounted) {
-                        cubit.refresh();
+                        await cubit.refresh();
                       }
                     },
                   ),

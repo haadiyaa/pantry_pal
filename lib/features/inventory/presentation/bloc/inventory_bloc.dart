@@ -137,6 +137,12 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
     InventoryItemDeleted event,
     Emitter<InventoryState> emit,
   ) async {
+    final previousItems = state.items;
+    final previousCount = state.totalItemCount;
+    emit(state.copyWith(
+      items: previousItems.where((i) => i.id != event.id).toList(),
+      totalItemCount: (previousCount - 1).clamp(0, double.infinity).toInt(),
+    ));
     try {
       await _repository.delete(event.id);
       await _refresh(emit);
@@ -145,6 +151,8 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
       emit(
         state.copyWith(
           status: InventoryStatus.failure,
+          items: previousItems,
+          totalItemCount: previousCount,
           errorMessage: e.toString(),
         ),
       );
@@ -155,6 +163,23 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
     InventoryItemUsedUp event,
     Emitter<InventoryState> emit,
   ) async {
+    final previousItems = state.items;
+    final previousCount = state.totalItemCount;
+    if (event.item.quantity <= 1) {
+      emit(state.copyWith(
+        items: previousItems.where((i) => i.id != event.item.id).toList(),
+        totalItemCount: (previousCount - 1).clamp(0, double.infinity).toInt(),
+      ));
+    } else {
+      emit(state.copyWith(
+        items: previousItems.map((i) {
+          if (i.id == event.item.id) {
+            return i.copyWith(quantity: i.quantity - 1);
+          }
+          return i;
+        }).toList(),
+      ));
+    }
     try {
       final addToShopping = await _settingsRepo.getAddUsedUpToShoppingList();
       final result = await _repository.consume(
@@ -169,6 +194,8 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
       emit(
         state.copyWith(
           status: InventoryStatus.failure,
+          items: previousItems,
+          totalItemCount: previousCount,
           errorMessage: e.toString(),
         ),
       );
@@ -179,6 +206,23 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
     InventoryItemWasted event,
     Emitter<InventoryState> emit,
   ) async {
+    final previousItems = state.items;
+    final previousCount = state.totalItemCount;
+    if (event.item.quantity <= 1) {
+      emit(state.copyWith(
+        items: previousItems.where((i) => i.id != event.item.id).toList(),
+        totalItemCount: (previousCount - 1).clamp(0, double.infinity).toInt(),
+      ));
+    } else {
+      emit(state.copyWith(
+        items: previousItems.map((i) {
+          if (i.id == event.item.id) {
+            return i.copyWith(quantity: i.quantity - 1);
+          }
+          return i;
+        }).toList(),
+      ));
+    }
     try {
       final result = await _repository.consume(
         item: event.item,
@@ -192,6 +236,8 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
       emit(
         state.copyWith(
           status: InventoryStatus.failure,
+          items: previousItems,
+          totalItemCount: previousCount,
           errorMessage: e.toString(),
         ),
       );

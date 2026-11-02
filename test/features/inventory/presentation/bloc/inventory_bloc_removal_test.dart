@@ -89,6 +89,7 @@ void main() {
       },
       act: (bloc) => bloc.add(InventoryItemUsedUp(sampleItem)),
       expect: () => [
+        isA<InventoryState>(),
         isA<InventoryState>().having(
           (s) => s.lastConsumeResult,
           'lastConsumeResult',
@@ -179,6 +180,7 @@ void main() {
       },
       act: (bloc) => bloc.add(InventoryItemWasted(sampleItem)),
       expect: () => [
+        isA<InventoryState>(),
         isA<InventoryState>().having(
           (s) => s.lastConsumeResult?.event.reason,
           'reason',

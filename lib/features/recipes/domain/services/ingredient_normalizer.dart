@@ -46,7 +46,7 @@ class IngredientNormalizer {
       return '';
     }
 
-    var cleaned = filteredTokens.join(' ').trim();
+    final cleaned = filteredTokens.join(' ').trim();
 
     // 4. Check whole phrase against Indian/Colloquial synonym map
     if (RecipeMatcherConstants.ingredientSynonyms.containsKey(cleaned)) {

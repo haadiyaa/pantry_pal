@@ -220,7 +220,7 @@ void main() {
         tester.view.resetDevicePixelRatio();
       });
 
-      final emptySummary = StatsSummary(
+      const emptySummary = StatsSummary(
         period: StatsPeriod.last7Days,
         totalEvents: 0,
         rescuedUnits: 0,
@@ -232,14 +232,14 @@ void main() {
         valueWastedPaise: 0,
         wastedPricedUnits: 0,
         daysSinceLastWaste: null,
-        timeBuckets: const [],
-        categoryBreakdown: const [],
-        topWastedItems: const [],
-        topUsedItems: const [],
+        timeBuckets: [],
+        categoryBreakdown: [],
+        topWastedItems: [],
+        topUsedItems: [],
       );
 
       when(() => mockStatsCubit.state).thenReturn(
-        StatsState(
+        const StatsState(
           status: StatsStatus.success,
           period: StatsPeriod.last7Days,
           summary: emptySummary,

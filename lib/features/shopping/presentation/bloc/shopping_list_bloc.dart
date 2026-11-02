@@ -139,8 +139,24 @@ class ShoppingListBloc extends Bloc<ShoppingListEvent, ShoppingListState> {
     ShoppingListItemDeleted event,
     Emitter<ShoppingListState> emit,
   ) async {
+    final previousItems = state.items;
+    final itemToDelete = previousItems.cast<ShoppingItem?>().firstWhere(
+          (i) => i?.id == event.id,
+          orElse: () => null,
+        );
+    if (itemToDelete != null) {
+      final updated = previousItems.where((i) => i.id != event.id).toList();
+      emit(
+        state.copyWith(
+          items: updated,
+          groupedList: ShoppingListGrouper.group(updated),
+          lastDeletedItem: () => itemToDelete,
+        ),
+      );
+    }
+
     try {
-      final item = await shoppingRepository.getById(event.id);
+      final item = itemToDelete ?? await shoppingRepository.getById(event.id);
       if (item != null) {
         await shoppingRepository.delete(event.id);
         emit(state.copyWith(lastDeletedItem: () => item));
@@ -149,6 +165,8 @@ class ShoppingListBloc extends Bloc<ShoppingListEvent, ShoppingListState> {
       emit(
         state.copyWith(
           status: ShoppingListStatus.failure,
+          items: previousItems,
+          groupedList: ShoppingListGrouper.group(previousItems),
           errorMessage: () => e.toString().replaceFirst('Exception: ', ''),
         ),
       );

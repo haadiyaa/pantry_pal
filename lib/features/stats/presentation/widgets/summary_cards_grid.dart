@@ -110,7 +110,7 @@ class _SummaryStatCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    Widget header = Row(
+    final header = Row(
       children: [
         Icon(icon, size: 20, color: iconColor),
         const SizedBox(width: 6),

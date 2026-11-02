@@ -41,7 +41,7 @@ class InventoryPage extends StatelessWidget {
           ),
           BlocBuilder<ShoppingBadgeCubit, int>(
             builder: (context, count) {
-              final icon = const Icon(Icons.shopping_cart_outlined);
+              const icon = Icon(Icons.shopping_cart_outlined);
               return IconButton(
                 key: const Key('shopping_list_button'),
                 tooltip: 'Shopping List',

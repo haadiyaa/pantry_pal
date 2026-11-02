@@ -222,7 +222,7 @@ void main() {
       final result = <String, List<Map<String, Object?>>>{};
       for (final row in tables) {
         final table = row['name'] as String;
-        final columns = await db.rawQuery("PRAGMA table_info($table)");
+        final columns = await db.rawQuery('PRAGMA table_info($table)');
         result[table] = columns;
       }
       return result;

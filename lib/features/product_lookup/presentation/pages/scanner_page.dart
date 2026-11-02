@@ -401,9 +401,9 @@ class _ScannerCameraViewState extends State<_ScannerCameraView> {
                     ),
                     const SizedBox(height: 20),
                     if (isPermissionDenied)
-                      FilledButton(
+                      const FilledButton(
                         onPressed: openAppSettings,
-                        child: const Text('Open Settings'),
+                        child: Text('Open Settings'),
                       )
                     else ...[
                       FilledButton.icon(
