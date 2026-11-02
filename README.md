@@ -42,7 +42,7 @@ Every year, the average household throws away hundreds of kilograms of food simp
 ## ✨ Key Features
 
 ### 1. 🗄️ Smart Pantry & Expiry Tracking
-- **Color-Coded Expiry Urgency**: Real-time visual status badges (Fresh, Expiring Soon $\le 3$ days, and Expired).
+- **Color-Coded Expiry Urgency**: Real-time visual status badges (Fresh, Expiring Soon ≤ 3 days, and Expired).
 - **Fast Search & Category Filtering**: Instant debounce search across names and notes, with filters for Produce, Dairy, Bakery, Meat, Grains, Snacks, and more.
 - **Smart Shelf-Life Suggestions**: Selecting a category automatically suggests realistic shelf lives based on food science defaults.
 - **Optimistic Swipe Actions**:
@@ -65,7 +65,7 @@ Every year, the average household throws away hundreds of kilograms of food simp
 
 ### 4. 🍳 Recipe Matching Engine & Missing Ingredient Sync
 - **Cook With What You Have**: Connects with TheMealDB culinary database to find recipes matching your available pantry items.
-- **Intelligent Ingredient Normalizer**: Removes noise words (e.g., "chopped", "fresh", "organic"), strips brand names, and maps culinary synonyms (e.g., "curd" $\leftrightarrow$ "yogurt").
+- **Intelligent Ingredient Normalizer**: Removes noise words (e.g., "chopped", "fresh", "organic"), strips brand names, and maps culinary synonyms (e.g., "curd" ↔ "yogurt").
 - **Real-Time Match Score**: Shows exact match percentages (e.g., "You have 5 of 6 ingredients").
 - **Kitchen Staples Intelligence**: Common staples (salt, pepper, cooking oil, water) are recognized and excluded from missing counts unless marked unavailable.
 - **One-Tap Shopping List Sync**: Tap *"Add missing ingredients to shopping list"* to send missing recipe requirements directly into your shopping queue.
@@ -105,30 +105,30 @@ Every year, the average household throws away hundreds of kilograms of food simp
 Pantry Pal strictly adheres to **Clean Architecture** and the **BLoC (Business Logic Component)** pattern, ensuring strict separation of concerns, testability, and maintainability.
 
 ```mermaid
-flowchart TD
-    subgraph UI["Presentation Layer (Stateless Widgets)"]
-        Pages["Pages (InventoryPage, RecipesPage, ShoppingListPage, StatsPage)"]
-        Widgets["Reusable UI Components & Charts"]
-        Blocs["BLoCs & Cubits (InventoryBloc, ShoppingListBloc, StatsCubit, etc.)"]
+graph TD
+    subgraph UI ["Presentation Layer"]
+        Pages["UI Pages: Inventory, Recipes, Shopping, Stats"]
+        Widgets["Reusable Widgets and Charts"]
+        Blocs["BLoCs and Cubits: State Management"]
     end
 
-    subgraph Domain["Domain Layer (Pure Dart)"]
-        UseCases["Services & Engines (RecipeMatcher, IngredientNormalizer, StatsCalculator)"]
-        Contracts["Repository Interfaces (PantryRepository, ShoppingRepository, StatsRepository)"]
-        Models["Immutable Entities & Value Objects (PantryItem, ShoppingItem, etc.)"]
+    subgraph Domain ["Domain Layer"]
+        UseCases["Services: Matcher, Normalizer, Calculator"]
+        Contracts["Repository Interfaces"]
+        Models["Immutable Entities and Value Objects"]
     end
 
-    subgraph Data["Data Layer"]
-        RepoImpl["Repository Implementations (SqlitePantryRepository, etc.)"]
-        DataSources["Data Sources (OpenFoodFactsApi, TheMealDbRemoteDataSource)"]
-        LocalDB["SQLite Database (AppDatabase v6) & SharedPreferences"]
+    subgraph Data ["Data Layer"]
+        RepoImpl["Repository Implementations"]
+        DataSources["Remote APIs: OpenFoodFacts, TheMealDB"]
+        LocalDB["SQLite Database v6 and SharedPreferences"]
     end
 
     Pages --> Blocs
     Widgets --> Blocs
     Blocs --> Contracts
     Blocs --> UseCases
-    RepoImpl -.-> Contracts
+    RepoImpl --> Contracts
     RepoImpl --> LocalDB
     RepoImpl --> DataSources
 ```
@@ -177,12 +177,12 @@ flowchart TD
 The SQLite database (`pantry_pal.db`) is managed via [`AppDatabase`](file:///Users/hadiya/develop/projects/pantry_pal/lib/core/database/app_database.dart) with full incremental schema upgrades tested from version 1 through version 6:
 
 ```mermaid
-flowchart LR
-    V1["v1: pantry_items<br/>(name, qty, expiry)"] --> V2["v2: notes, category idx"]
-    V2 --> V3["v3: product_cache<br/>(Open Food Facts)"]
-    V3 --> V4["v4: price_paise<br/>(rupee support)"]
-    V4 --> V5["v5: recipe_cache &<br/>ingredient_search_cache"]
-    V5 --> V6["v6: shopping_items &<br/>pantry_events (waste log)"]
+graph LR
+    V1["v1: Initial Pantry Items"] --> V2["v2: Notes and Category Index"]
+    V2 --> V3["v3: Open Food Facts Product Cache"]
+    V3 --> V4["v4: Price Paise Support"]
+    V4 --> V5["v5: Recipe and Search Caches"]
+    V5 --> V6["v6: Shopping Items and Waste Events"]
 ```
 
 ---
@@ -262,7 +262,7 @@ flutter analyze
 ```
 
 ### Running the End-to-End Journey Test
-An integration test verifying the full journey (**Add item $\rightarrow$ See in pantry $\rightarrow$ Mark used up $\rightarrow$ See on shopping list**) is available:
+An integration test verifying the full journey (**Add item → See in pantry → Mark used up → See on shopping list**) is available:
 ```bash
 # On macOS desktop runner:
 flutter test integration_test/core_journey_test.dart -d macos
