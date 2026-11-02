@@ -185,11 +185,33 @@ class ReceiptReviewCubit extends Cubit<ReceiptReviewState> {
     final includedItems = state.items.where((i) => i.isIncluded).toList();
     if (includedItems.isEmpty) return;
 
-    // Validate names
+    // Validate all included items
     for (final item in includedItems) {
-      if (item.name.trim().isEmpty) {
+      final trimmed = item.name.trim();
+      if (trimmed.isEmpty) {
         emit(state.copyWith(
           errorMessage: () => 'Please enter a name for all included items.',
+        ));
+        return;
+      }
+      if (trimmed.length > 100) {
+        emit(state.copyWith(
+          errorMessage: () => 'Item "${item.name}" exceeds 100 characters.',
+        ));
+        return;
+      }
+      if (item.quantity < 1 || item.quantity > 9999) {
+        emit(state.copyWith(
+          errorMessage: () =>
+              'Quantity for "${item.name}" must be between 1 and 9,999.',
+        ));
+        return;
+      }
+      if (item.priceInPaise != null &&
+          (item.priceInPaise! < 0 || item.priceInPaise! > 10000000)) {
+        emit(state.copyWith(
+          errorMessage: () =>
+              'Price for "${item.name}" must be between ₹0 and ₹1,00,000.',
         ));
         return;
       }

@@ -1,3 +1,5 @@
+import '../../../../core/config/api_keys.dart';
+
 /// Constants used by the recipe ingredient normalization, matching engine,
 /// staple filtering, and vegetarian verification.
 class RecipeMatcherConstants {
@@ -7,10 +9,9 @@ class RecipeMatcherConstants {
   static const String theMealDbAttribution =
       'Recipe data and imagery: TheMealDB (https://www.themealdb.com/)';
 
-  /// Base URL and public free development API key for TheMealDB.
-  static const String theMealDbBaseUrl =
-      'https://www.themealdb.com/api/json/v1/1';
-  static const String theMealDbTestApiKey = '1';
+  /// Base URL and API key for TheMealDB, sourced from gitignored [ApiKeys].
+  static const String theMealDbBaseUrl = ApiKeys.theMealDbBaseUrl;
+  static const String theMealDbTestApiKey = ApiKeys.theMealDbApiKey;
 
   /// Pantry staples assumed to be present in any kitchen.
   /// These do not count as "missing" when calculating recipe match percentage.

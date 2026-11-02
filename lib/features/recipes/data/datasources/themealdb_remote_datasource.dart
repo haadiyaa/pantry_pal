@@ -69,12 +69,13 @@ class TheMealDbRemoteDataSource implements RecipeRemoteDataSource {
 
   @override
   Future<Map<String, dynamic>?> lookupRawById(String id) async {
-    if (id.trim().isEmpty) return null;
+    final cleanId = id.trim();
+    if (cleanId.isEmpty || cleanId.length > 64) return null;
 
     try {
       final response = await _dio.get<Map<String, dynamic>>(
         '/lookup.php',
-        queryParameters: {'i': id.trim()},
+        queryParameters: {'i': cleanId},
       );
 
       final data = response.data;

@@ -245,6 +245,84 @@ void main() {
       );
 
       blocTest<ItemFormCubit, ItemFormState>(
+        'fails validation when name exceeds 100 characters',
+        build: () => ItemFormCubit(repository: repository),
+        seed: () => ItemFormCubit(repository: repository)
+            .state
+            .copyWith(name: 'A' * 101),
+        act: (cubit) => cubit.submit(),
+        expect: () => [
+          isA<ItemFormState>()
+              .having((s) => s.nameError, 'nameError', 'Name cannot exceed 100 characters'),
+        ],
+        verify: (_) {
+          verifyNever(() => repository.add(any()));
+        },
+      );
+
+      blocTest<ItemFormCubit, ItemFormState>(
+        'fails validation when quantity exceeds 9999',
+        build: () => ItemFormCubit(repository: repository),
+        seed: () => ItemFormCubit(repository: repository)
+            .state
+            .copyWith(name: 'Milk', quantity: 10000),
+        act: (cubit) => cubit.submit(),
+        expect: () => [
+          isA<ItemFormState>()
+              .having((s) => s.quantityError, 'quantityError', 'Quantity cannot exceed 9,999'),
+        ],
+        verify: (_) {
+          verifyNever(() => repository.add(any()));
+        },
+      );
+
+      blocTest<ItemFormCubit, ItemFormState>(
+        'rejects price with more than 2 decimal places or exceeding limit',
+        build: () => ItemFormCubit(repository: repository),
+        act: (cubit) {
+          cubit.priceChanged('10.999');
+          cubit.priceChanged('100001');
+        },
+        expect: () => [
+          isA<ItemFormState>()
+              .having((s) => s.priceError, 'priceError', 'Price can have at most 2 decimal places'),
+          isA<ItemFormState>()
+              .having((s) => s.priceError, 'priceError', 'Price cannot exceed ₹1,00,000'),
+        ],
+      );
+
+      blocTest<ItemFormCubit, ItemFormState>(
+        'sanitizes notes and barcode exceeding length bounds on submit',
+        build: () {
+          when(() => repository.add(any())).thenAnswer((_) async => 1);
+          return ItemFormCubit(repository: repository);
+        },
+        seed: () => ItemFormCubit(repository: repository).state.copyWith(
+              name: 'Organic Milk',
+              notes: 'N' * 600,
+              barcode: '1' * 60,
+            ),
+        act: (cubit) => cubit.submit(),
+        expect: () => [
+          isA<ItemFormState>()
+              .having((s) => s.status, 'status', ItemFormStatus.submitting),
+          isA<ItemFormState>()
+              .having((s) => s.status, 'status', ItemFormStatus.success),
+        ],
+        verify: (_) {
+          verify(
+            () => repository.add(
+              any(
+                that: isA<PantryItem>()
+                    .having((i) => i.notes?.length, 'notes length', 500)
+                    .having((i) => i.barcode?.length, 'barcode length', 48),
+              ),
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest<ItemFormCubit, ItemFormState>(
         'emits [submitting, failure] when repository throws',
         build: () {
           when(() => repository.add(any()))

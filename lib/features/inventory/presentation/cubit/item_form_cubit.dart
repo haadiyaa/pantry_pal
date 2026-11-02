@@ -14,9 +14,15 @@ class ItemFormCubit extends Cubit<ItemFormState> {
   final PantryRepository repository;
 
   void nameChanged(String value) {
-    final error = state.nameError != null && value.trim().isNotEmpty
-        ? null
-        : state.nameError;
+    String? error;
+    final trimmed = value.trim();
+    if (trimmed.length > 100) {
+      error = 'Name cannot exceed 100 characters';
+    } else if (state.nameError != null && trimmed.isNotEmpty) {
+      error = null;
+    } else {
+      error = state.nameError;
+    }
     emit(state.copyWith(
       name: value,
       nameError: () => error,
@@ -24,17 +30,25 @@ class ItemFormCubit extends Cubit<ItemFormState> {
   }
 
   void quantityChanged(int value) {
+    String? error;
+    if (value < 1) {
+      error = 'Quantity must be at least 1';
+    } else if (value > 9999) {
+      error = 'Quantity cannot exceed 9,999';
+    }
     emit(state.copyWith(
       quantity: value,
-      quantityError: () => value < 1 ? 'Quantity must be at least 1' : null,
+      quantityError: () => error,
     ));
   }
 
   void quantityIncremented() {
-    emit(state.copyWith(
-      quantity: state.quantity + 1,
-      quantityError: () => null,
-    ));
+    if (state.quantity < 9999) {
+      emit(state.copyWith(
+        quantity: state.quantity + 1,
+        quantityError: () => null,
+      ));
+    }
   }
 
   void quantityDecremented() {
@@ -84,6 +98,25 @@ class ItemFormCubit extends Cubit<ItemFormState> {
       return;
     }
 
+    if (parsed > 100000) {
+      emit(state.copyWith(
+        priceText: value,
+        priceInPaise: () => null,
+        priceError: () => 'Price cannot exceed ₹1,00,000',
+      ));
+      return;
+    }
+
+    final parts = normalized.split('.');
+    if (parts.length > 1 && parts[1].length > 2) {
+      emit(state.copyWith(
+        priceText: value,
+        priceInPaise: () => null,
+        priceError: () => 'Price can have at most 2 decimal places',
+      ));
+      return;
+    }
+
     final paise = (parsed * 100).round();
     emit(state.copyWith(
       priceText: value,
@@ -101,9 +134,23 @@ class ItemFormCubit extends Cubit<ItemFormState> {
       return;
     }
 
+    if (trimmedName.length > 100) {
+      emit(state.copyWith(
+        nameError: () => 'Name cannot exceed 100 characters',
+      ));
+      return;
+    }
+
     if (state.quantity < 1) {
       emit(state.copyWith(
         quantityError: () => 'Quantity must be at least 1',
+      ));
+      return;
+    }
+
+    if (state.quantity > 9999) {
+      emit(state.copyWith(
+        quantityError: () => 'Quantity cannot exceed 9,999',
       ));
       return;
     }
@@ -120,8 +167,13 @@ class ItemFormCubit extends Cubit<ItemFormState> {
     ));
 
     try {
-      final barcode = state.barcode.trim();
-      final notes = state.notes.trim();
+      final rawBarcode = state.barcode.trim();
+      final barcode = rawBarcode.length > 48
+          ? rawBarcode.substring(0, 48)
+          : rawBarcode;
+      final rawNotes = state.notes.trim();
+      final notes =
+          rawNotes.length > 500 ? rawNotes.substring(0, 500) : rawNotes;
 
       if (state.isEditing) {
         final updated = state.initialItem!.copyWith(

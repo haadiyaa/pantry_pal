@@ -170,6 +170,7 @@ class _ItemFormView extends StatelessWidget {
                     key: const Key('item_name_field'),
                     initialValue: cubit.state.name,
                     autofocus: !isEditing,
+                    maxLength: 100,
                     textCapitalization: TextCapitalization.sentences,
                     decoration: InputDecoration(
                       labelText: 'Item name *',
@@ -338,6 +339,7 @@ class _ItemFormView extends StatelessWidget {
                 key: const Key('item_notes_field'),
                 initialValue: cubit.state.notes,
                 maxLines: 3,
+                maxLength: 500,
                 textCapitalization: TextCapitalization.sentences,
                 decoration: const InputDecoration(
                   labelText: 'Notes (optional)',
@@ -353,6 +355,7 @@ class _ItemFormView extends StatelessWidget {
               TextFormField(
                 key: const Key('item_barcode_field'),
                 initialValue: cubit.state.barcode,
+                maxLength: 48,
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(
                   labelText: 'Barcode (optional)',

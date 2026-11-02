@@ -52,5 +52,11 @@ key.properties
 *.keystore
 *.jks
 
+# API keys and environment files
+lib/core/config/api_keys.dart
+.env
+.env.*
+!.env.example
+
 # Widget Preview related
 .widget_preview/

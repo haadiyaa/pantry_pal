@@ -279,6 +279,40 @@ void main() {
     );
 
     blocTest<ReceiptReviewCubit, ReceiptReviewState>(
+      'saveAll validates bounds: name length, quantity, and price',
+      build: () {
+        when(() => pantryRepository.getAll()).thenAnswer((_) async => []);
+        return ReceiptReviewCubit(
+          pantryRepository: pantryRepository,
+          notificationSyncService: notificationSyncService,
+        );
+      },
+      act: (cubit) async {
+        await cubit.initialize(sampleDraft);
+        // Exceed name limit
+        final firstItem = cubit.state.items.first;
+        cubit.updateName(firstItem.id, 'X' * 105);
+        await cubit.saveAll();
+        expect(cubit.state.errorMessage, contains('exceeds 100 characters'));
+
+        // Fix name, set invalid quantity
+        cubit.updateName(firstItem.id, 'Valid Name');
+        cubit.updateQuantity(firstItem.id, 10000);
+        await cubit.saveAll();
+        expect(cubit.state.errorMessage, contains('must be between 1 and 9,999'));
+
+        // Fix quantity, set invalid price
+        cubit.updateQuantity(firstItem.id, 2);
+        cubit.updatePrice(firstItem.id, 20000000); // 2 lakh rupees
+        await cubit.saveAll();
+        expect(cubit.state.errorMessage, contains('must be between ₹0 and ₹1,00,000'));
+      },
+      verify: (_) {
+        verifyNever(() => pantryRepository.addAll(any()));
+      },
+    );
+
+    blocTest<ReceiptReviewCubit, ReceiptReviewState>(
       'saveAll emits failure when repository throws an exception',
       build: () {
         when(() => pantryRepository.getAll()).thenAnswer((_) async => []);

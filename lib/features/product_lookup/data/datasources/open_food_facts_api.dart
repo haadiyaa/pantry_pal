@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 
+import '../../../../core/config/api_keys.dart';
 import '../../domain/models/product.dart';
 import '../../domain/utils/category_mapper.dart';
 
@@ -8,7 +9,7 @@ class OpenFoodFactsApi {
       : _dio = dio ??
             Dio(
               BaseOptions(
-                baseUrl: 'https://world.openfoodfacts.org/api/v2/product',
+                baseUrl: ApiKeys.openFoodFactsBaseUrl,
                 connectTimeout: const Duration(seconds: 15),
                 receiveTimeout: const Duration(seconds: 15),
                 validateStatus: (status) =>
@@ -23,10 +24,18 @@ class OpenFoodFactsApi {
   final Dio _dio;
 
   Future<Product?> getProduct(String barcode) async {
+    final cleanBarcode = barcode.trim();
+    // Barcodes should be valid alphanumeric/identifier tokens under 48 chars
+    if (cleanBarcode.isEmpty ||
+        cleanBarcode.length > 48 ||
+        !RegExp(r'^[a-zA-Z0-9\-_]+$').hasMatch(cleanBarcode)) {
+      return null;
+    }
+
     final Response<Map<String, dynamic>> response;
     try {
       response = await _dio.get<Map<String, dynamic>>(
-        '/${Uri.encodeComponent(barcode)}.json',
+        '/${Uri.encodeComponent(cleanBarcode)}.json',
         queryParameters: {
           'fields': 'code,product_name,brands,categories_tags,image_url,quantity',
         },

@@ -73,6 +73,7 @@ class _ShoppingListView extends StatelessWidget {
     final nameController = TextEditingController(text: item.name);
     var category = item.category;
     var quantity = item.quantity;
+    String? nameError;
 
     showDialog<void>(
       context: context,
@@ -85,11 +86,18 @@ class _ShoppingListView extends StatelessWidget {
             children: [
               TextField(
                 controller: nameController,
+                maxLength: 100,
                 textCapitalization: TextCapitalization.sentences,
-                decoration: const InputDecoration(
-                  labelText: 'Item name',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: 'Item name *',
+                  errorText: nameError,
+                  border: const OutlineInputBorder(),
                 ),
+                onChanged: (val) {
+                  if (nameError != null && val.trim().isNotEmpty) {
+                    setDialogState(() => nameError = null);
+                  }
+                },
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
@@ -141,7 +149,9 @@ class _ShoppingListView extends StatelessWidget {
                       ),
                       IconButton.outlined(
                         icon: const Icon(Icons.add),
-                        onPressed: () => setDialogState(() => quantity++),
+                        onPressed: quantity < 9999
+                            ? () => setDialogState(() => quantity++)
+                            : null,
                       ),
                     ],
                   ),
@@ -157,17 +167,25 @@ class _ShoppingListView extends StatelessWidget {
             FilledButton(
               onPressed: () {
                 final newName = nameController.text.trim();
-                if (newName.isNotEmpty) {
-                  context.read<ShoppingListBloc>().add(
-                        ShoppingListItemEdited(
-                          item.copyWith(
-                            name: newName,
-                            category: category,
-                            quantity: quantity,
-                          ),
-                        ),
-                      );
+                if (newName.isEmpty) {
+                  setDialogState(() => nameError = 'Item name cannot be empty');
+                  return;
                 }
+                if (newName.length > 100) {
+                  setDialogState(
+                    () => nameError = 'Name cannot exceed 100 characters',
+                  );
+                  return;
+                }
+                context.read<ShoppingListBloc>().add(
+                      ShoppingListItemEdited(
+                        item.copyWith(
+                          name: newName,
+                          category: category,
+                          quantity: quantity,
+                        ),
+                      ),
+                    );
                 Navigator.of(dialogContext).pop();
               },
               child: const Text('Save'),
@@ -645,7 +663,24 @@ class _ShoppingQuickAddBarState extends State<_ShoppingQuickAddBar> {
 
   void _submit() {
     final name = _controller.text.trim();
-    if (name.isEmpty) return;
+    if (name.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter an item name to add to the shopping list'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+    if (name.length > 100) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Item name cannot exceed 100 characters'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
 
     context.read<ShoppingListBloc>().add(
           ShoppingListManualItemAdded(
@@ -671,8 +706,10 @@ class _ShoppingQuickAddBarState extends State<_ShoppingQuickAddBar> {
             child: TextField(
               key: const Key('shopping_quick_add_input'),
               controller: _controller,
+              maxLength: 100,
               textCapitalization: TextCapitalization.sentences,
               decoration: InputDecoration(
+                counterText: '',
                 hintText: 'Add an item...',
                 isDense: true,
                 filled: true,

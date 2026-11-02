@@ -377,10 +377,15 @@ class _ReceiptItemCard extends StatelessWidget {
                   child: TextFormField(
                     key: Key('name_field_${item.id}'),
                     initialValue: item.name,
-                    decoration: const InputDecoration(
+                    maxLength: 100,
+                    decoration: InputDecoration(
                       labelText: 'Item name *',
+                      counterText: '',
                       isDense: true,
-                      border: OutlineInputBorder(),
+                      border: const OutlineInputBorder(),
+                      errorText: item.isIncluded && item.name.trim().isEmpty
+                          ? 'Name required'
+                          : null,
                     ),
                     onChanged: (val) => cubit.updateName(item.id, val),
                   ),
