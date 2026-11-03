@@ -152,10 +152,10 @@ void main() {
       await tester.pump();
       await tester.pumpAndSettle();
 
-      // Only ONE snackbar is visible, showing B
+      // Only ONE banner is visible, showing B
       expect(find.text('Deleted "Apple"'), findsNothing);
       expect(find.text('Deleted "Banana"'), findsOneWidget);
-      expect(find.byType(SnackBar), findsOneWidget);
+      expect(find.byKey(const Key('app_top_banner')), findsOneWidget);
 
       // 3. Tap Undo: restores only B
       await tester.tap(find.text('Undo'));
@@ -230,7 +230,7 @@ void main() {
       await tester.pump();
 
       // State did not change id, so no duplicate snackbar was pushed
-      expect(find.byType(SnackBar), findsOneWidget);
+      expect(find.byKey(const Key('app_top_banner')), findsOneWidget);
       expect(find.text('Deleted "Apple"'), findsOneWidget);
     });
 

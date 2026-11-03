@@ -123,9 +123,8 @@ void main() {
       expect(find.text('Deleted "Almond Milk"'), findsOneWidget);
       expect(find.text('Undo'), findsOneWidget);
 
-      // Verify floating style
-      final snackBar = tester.widget<SnackBar>(find.byType(SnackBar));
-      expect(snackBar.behavior, SnackBarBehavior.floating);
+      // Verify top banner style
+      expect(find.byKey(const Key('app_top_banner')), findsOneWidget);
 
       // Tap Undo
       await tester.tap(find.text('Undo'));
@@ -154,7 +153,7 @@ void main() {
       // First is gone, second is shown
       expect(find.text('Deleted "Almond Milk"'), findsNothing);
       expect(find.text('Deleted "Oatmeal"'), findsOneWidget);
-      expect(find.byType(SnackBar), findsOneWidget);
+      expect(find.byKey(const Key('app_top_banner')), findsOneWidget);
 
       // Undo restores ONLY Oatmeal
       await tester.tap(find.text('Undo'));
@@ -194,8 +193,7 @@ void main() {
       await tester.pump();
 
       expect(find.text('Please enter an item name to add to the shopping list'), findsOneWidget);
-      final snackBar = tester.widget<SnackBar>(find.byType(SnackBar));
-      expect(snackBar.behavior, SnackBarBehavior.floating);
+      expect(find.byKey(const Key('app_top_banner')), findsOneWidget);
     });
   });
 }

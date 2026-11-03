@@ -3,11 +3,12 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('Architecture rule: showSnackBar must ONLY be invoked inside lib/core/ui/app_snackbar.dart', () {
+  test('Architecture rule: showSnackBar and notification OverlayEntry must ONLY be created inside lib/core/ui/app_snackbar.dart', () {
     final libDir = Directory('lib');
     expect(libDir.existsSync(), isTrue, reason: 'lib directory must exist');
 
-    final forbiddenFiles = <String>[];
+    final forbiddenSnackBarFiles = <String>[];
+    final forbiddenOverlayFiles = <String>[];
     const allowedPath = 'lib/core/ui/app_snackbar.dart';
 
     for (final entity in libDir.listSync(recursive: true)) {
@@ -20,17 +21,30 @@ void main() {
         final content = entity.readAsStringSync();
         // Check for direct invocations of showSnackBar
         if (content.contains('.showSnackBar(')) {
-          forbiddenFiles.add(normalizedPath);
+          forbiddenSnackBarFiles.add(normalizedPath);
+        }
+
+        // Check for ad-hoc notification OverlayEntry creations
+        if (content.contains('OverlayEntry(')) {
+          forbiddenOverlayFiles.add(normalizedPath);
         }
       }
     }
 
     expect(
-      forbiddenFiles,
+      forbiddenSnackBarFiles,
       isEmpty,
       reason:
-          'Direct calls to showSnackBar are forbidden! All snackbars must go through AppSnackBar. '
-          'Found forbidden calls in:\n${forbiddenFiles.join('\n')}',
+          'Direct calls to showSnackBar are forbidden! All message notifications must go through AppSnackBar. '
+          'Found forbidden calls in:\n${forbiddenSnackBarFiles.join('\n')}',
+    );
+
+    expect(
+      forbiddenOverlayFiles,
+      isEmpty,
+      reason:
+          'Direct insertions of OverlayEntry are forbidden outside AppSnackBar! '
+          'Found forbidden OverlayEntry in:\n${forbiddenOverlayFiles.join('\n')}',
     );
   });
 }

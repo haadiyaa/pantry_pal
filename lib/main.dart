@@ -213,18 +213,12 @@ class PantryPalApp extends StatelessWidget {
         RepositoryProvider<NotificationSyncService>.value(
           value: notificationSyncService,
         ),
-        RepositoryProvider<RecipeRepository>.value(
-          value: recipeRepository,
-        ),
-        RepositoryProvider<ShoppingRepository>.value(
-          value: shoppingRepository,
-        ),
+        RepositoryProvider<RecipeRepository>.value(value: recipeRepository),
+        RepositoryProvider<ShoppingRepository>.value(value: shoppingRepository),
         RepositoryProvider<ShoppingSettingsRepository>.value(
           value: shoppingSettingsRepository,
         ),
-        RepositoryProvider<StatsRepository>.value(
-          value: statsRepository,
-        ),
+        RepositoryProvider<StatsRepository>.value(value: statsRepository),
         RepositoryProvider<StatsPeriodRepository>.value(
           value: statsPeriodRepository,
         ),
@@ -242,9 +236,7 @@ class PantryPalApp extends StatelessWidget {
         RepositoryProvider<TextRecognizer>(
           create: (_) => MlKitTextRecognizer(),
         ),
-        RepositoryProvider<ReceiptParser>(
-          create: (_) => const ReceiptParser(),
-        ),
+        RepositoryProvider<ReceiptParser>(create: (_) => const ReceiptParser()),
         RepositoryProvider<ImagePickerService>(
           create: (_) => AppImagePickerService(),
         ),
@@ -271,9 +263,7 @@ class PantryPalApp extends StatelessWidget {
               syncService: notificationSyncService,
             )..loadSettings(),
           ),
-          BlocProvider(
-            create: (_) => ShoppingBadgeCubit(shoppingRepository),
-          ),
+          BlocProvider(create: (_) => ShoppingBadgeCubit(shoppingRepository)),
           BlocProvider(
             create: (_) => ShoppingSettingsCubit(shoppingSettingsRepository),
           ),
@@ -287,26 +277,11 @@ class PantryPalApp extends StatelessWidget {
         child: MaterialApp.router(
           title: 'Pantry Pal',
           debugShowCheckedModeBanner: false,
-          theme: ThemeData(
-            useMaterial3: true,
-            colorSchemeSeed: Colors.green,
-            snackBarTheme: const SnackBarThemeData(
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.all(Radius.circular(12)),
-              ),
-            ),
-          ),
+          theme: ThemeData(useMaterial3: true, colorSchemeSeed: Colors.green),
           darkTheme: ThemeData(
             useMaterial3: true,
             colorSchemeSeed: Colors.green,
             brightness: Brightness.dark,
-            snackBarTheme: const SnackBarThemeData(
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.all(Radius.circular(12)),
-              ),
-            ),
           ),
           routerConfig: createAppRouter(initialLocation: initialLocation),
         ),
@@ -340,10 +315,7 @@ class _GlobalErrorFallback extends StatelessWidget {
                   const SizedBox(height: 16),
                   const Text(
                     'Something went wrong',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
