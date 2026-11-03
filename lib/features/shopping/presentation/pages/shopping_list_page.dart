@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/ui/app_snackbar.dart';
 import '../../../inventory/domain/models/pantry_category.dart';
 import '../../../inventory/domain/repositories/pantry_repository.dart';
 import '../../domain/models/shopping_item.dart';
@@ -202,8 +203,7 @@ class _ShoppingListView extends StatelessWidget {
 
     return BlocConsumer<ShoppingListBloc, ShoppingListState>(
       listenWhen: (prev, curr) =>
-          prev.lastDeletedItem != curr.lastDeletedItem ||
-          prev.lastClearedBought != curr.lastClearedBought ||
+          (prev.uiMessage?.id != curr.uiMessage?.id && curr.uiMessage != null) ||
           prev.errorMessage != curr.errorMessage ||
           prev.pantryWarningItem != curr.pantryWarningItem,
       listener: (context, state) {
@@ -211,48 +211,34 @@ class _ShoppingListView extends StatelessWidget {
           _showPantryWarningDialog(context, state.pantryWarningItem!);
         }
 
-        if (state.lastDeletedItem != null) {
-          final deletedItem = state.lastDeletedItem!;
-          ScaffoldMessenger.of(context).clearSnackBars();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Deleted "${deletedItem.name}"'),
-              action: SnackBarAction(
-                label: 'Undo',
-                onPressed: () {
-                  context
-                      .read<ShoppingListBloc>()
-                      .add(ShoppingListUndoDelete(deletedItem));
-                },
-              ),
-            ),
+        if (state.uiMessage != null) {
+          final msg = state.uiMessage!;
+          AppSnackBar.showWithAction(
+            context,
+            message: msg.text,
+            actionLabel: msg.actionLabel ?? 'Undo',
+            onAction: () {
+              if (msg.payload is ShoppingItem) {
+                context
+                    .read<ShoppingListBloc>()
+                    .add(ShoppingListUndoDelete(msg.payload as ShoppingItem));
+              } else if (msg.payload is List<ShoppingItem>) {
+                context
+                    .read<ShoppingListBloc>()
+                    .add(ShoppingListUndoClearBought(
+                        msg.payload as List<ShoppingItem>));
+              }
+            },
+            onDismissed: () {
+              context
+                  .read<ShoppingListBloc>()
+                  .add(const ShoppingListMessageDismissed());
+            },
           );
-        }
-
-        if (state.lastClearedBought != null) {
-          final cleared = state.lastClearedBought!;
-          ScaffoldMessenger.of(context).clearSnackBars();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Cleared ${cleared.length} bought items'),
-              action: SnackBarAction(
-                label: 'Undo',
-                onPressed: () {
-                  context
-                      .read<ShoppingListBloc>()
-                      .add(ShoppingListUndoClearBought(cleared));
-                },
-              ),
-            ),
-          );
-        }
-
-        if (state.errorMessage != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.errorMessage!),
-              backgroundColor: theme.colorScheme.error,
-            ),
+        } else if (state.errorMessage != null) {
+          AppSnackBar.showError(
+            context,
+            message: state.errorMessage!,
           );
         }
       },
@@ -664,20 +650,16 @@ class _ShoppingQuickAddBarState extends State<_ShoppingQuickAddBar> {
   void _submit() {
     final name = _controller.text.trim();
     if (name.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter an item name to add to the shopping list'),
-          duration: Duration(seconds: 2),
-        ),
+      AppSnackBar.showInfo(
+        context,
+        message: 'Please enter an item name to add to the shopping list',
       );
       return;
     }
     if (name.length > 100) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Item name cannot exceed 100 characters'),
-          duration: Duration(seconds: 2),
-        ),
+      AppSnackBar.showInfo(
+        context,
+        message: 'Item name cannot exceed 100 characters',
       );
       return;
     }

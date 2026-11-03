@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/ui/app_snackbar.dart';
 import '../../domain/models/pantry_category.dart';
 import '../../domain/models/pantry_item.dart';
 import '../../domain/repositories/pantry_repository.dart';
@@ -80,11 +81,9 @@ class _ItemFormView extends StatelessWidget {
             }
           }
         } else if (state.status == ItemFormStatus.failure) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.errorMessage ?? 'Failed to save item'),
-              backgroundColor: theme.colorScheme.error,
-            ),
+          AppSnackBar.showError(
+            context,
+            message: state.errorMessage ?? 'Failed to save item',
           );
         }
       },

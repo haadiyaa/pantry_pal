@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../../core/ui/app_snackbar.dart';
 import '../../../inventory/domain/models/pantry_item.dart';
 import '../../../inventory/domain/repositories/pantry_repository.dart';
 import '../../../shopping/domain/repositories/shopping_repository.dart';
@@ -59,14 +60,16 @@ class _RecipeDetailView extends StatelessWidget {
       final launched =
           await launchUrl(uri, mode: LaunchMode.externalApplication);
       if (!launched && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not open video player.')),
+        AppSnackBar.showError(
+          context,
+          message: 'Could not open video player.',
         );
       }
     } catch (_) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not open video URL.')),
+        AppSnackBar.showError(
+          context,
+          message: 'Could not open video URL.',
         );
       }
     }
@@ -272,19 +275,14 @@ class _RecipeDetailView extends StatelessWidget {
                                     .read<RecipeDetailCubit>()
                                     .addMissingToShoppingList();
                                 if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        count == 1
-                                            ? 'Added 1 item to shopping list'
-                                            : 'Added $count items to shopping list',
-                                      ),
-                                      action: SnackBarAction(
-                                        label: 'View list',
-                                        onPressed: () =>
-                                            context.push('/shopping'),
-                                      ),
-                                    ),
+                                  AppSnackBar.showInfo(
+                                    context,
+                                    message: count == 1
+                                        ? 'Added 1 item to shopping list'
+                                        : 'Added $count items to shopping list',
+                                    actionLabel: 'View list',
+                                    onAction: () =>
+                                        context.push('/shopping'),
                                   );
                                 }
                               }

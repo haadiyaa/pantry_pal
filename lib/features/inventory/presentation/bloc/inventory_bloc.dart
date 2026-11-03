@@ -3,7 +3,9 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:stream_transform/stream_transform.dart';
 
+import '../../../../core/ui/ui_message.dart';
 import '../../domain/models/consume_result.dart';
+import '../../domain/models/pantry_event.dart';
 import '../../domain/models/pantry_event_reason.dart';
 import '../../domain/models/pantry_item.dart';
 import '../../domain/repositories/pantry_repository.dart';
@@ -44,11 +46,19 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
     on<InventoryItemUsedUp>(_onItemUsedUp);
     on<InventoryItemWasted>(_onItemWasted);
     on<InventoryConsumeUndone>(_onConsumeUndone);
+    on<InventoryMessageDismissed>(_onMessageDismissed);
   }
 
   final PantryRepository _repository;
   final NotificationSyncService? _syncService;
   final ShoppingSettingsRepository _settingsRepo;
+
+  void _onMessageDismissed(
+    InventoryMessageDismissed event,
+    Emitter<InventoryState> emit,
+  ) {
+    emit(state.copyWith(uiMessage: () => null));
+  }
 
   Future<void> _onStarted(
     InventoryStarted event,
@@ -139,12 +149,40 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
   ) async {
     final previousItems = state.items;
     final previousCount = state.totalItemCount;
+    final item = previousItems.where((i) => i.id == event.id).firstOrNull;
     emit(state.copyWith(
       items: previousItems.where((i) => i.id != event.id).toList(),
       totalItemCount: (previousCount - 1).clamp(0, double.infinity).toInt(),
+      uiMessage: () => null,
     ));
     try {
       await _repository.delete(event.id);
+      if (item != null) {
+        final deleteResult = ConsumeResult(
+          item: item,
+          event: PantryEvent(
+            itemName: item.name,
+            category: item.category,
+            quantity: item.quantity,
+            pricePaise: item.priceInPaise,
+            expiryDate: item.expiryDate,
+            reason: PantryEventReason.deleted,
+            occurredAt: DateTime.now(),
+          ),
+          wasRemoved: true,
+          previousQuantity: item.quantity,
+          shoppingItemQuantityAdded: 0,
+          shoppingItemId: null,
+          shoppingItemWasCreated: false,
+        );
+        final message = UiMessage<ConsumeResult>.create(
+          text: 'Deleted "${item.name}"',
+          type: UiMessageType.undo,
+          actionLabel: 'Undo',
+          payload: deleteResult,
+        );
+        emit(state.copyWith(uiMessage: () => message));
+      }
       await _refresh(emit);
       await _syncService?.syncNotifications();
     } catch (e) {
@@ -169,6 +207,7 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
       emit(state.copyWith(
         items: previousItems.where((i) => i.id != event.item.id).toList(),
         totalItemCount: (previousCount - 1).clamp(0, double.infinity).toInt(),
+        uiMessage: () => null,
       ));
     } else {
       emit(state.copyWith(
@@ -178,6 +217,7 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
           }
           return i;
         }).toList(),
+        uiMessage: () => null,
       ));
     }
     try {
@@ -187,7 +227,22 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
         reason: PantryEventReason.used,
         addToShoppingList: addToShopping,
       );
-      emit(state.copyWith(lastConsumeResult: () => result));
+      String text;
+      if (result.shoppingItemId != null) {
+        text = 'Added "${result.item.name}" to shopping list';
+      } else if (result.wasRemoved) {
+        text = 'Used up "${result.item.name}"';
+      } else {
+        text =
+            'Used 1 "${result.item.name}" (${result.item.quantity - 1} left)';
+      }
+      final message = UiMessage<ConsumeResult>.create(
+        text: text,
+        type: UiMessageType.undo,
+        actionLabel: 'Undo',
+        payload: result,
+      );
+      emit(state.copyWith(uiMessage: () => message));
       await _refresh(emit);
       await _syncService?.syncNotifications();
     } catch (e) {
@@ -212,6 +267,7 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
       emit(state.copyWith(
         items: previousItems.where((i) => i.id != event.item.id).toList(),
         totalItemCount: (previousCount - 1).clamp(0, double.infinity).toInt(),
+        uiMessage: () => null,
       ));
     } else {
       emit(state.copyWith(
@@ -221,6 +277,7 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
           }
           return i;
         }).toList(),
+        uiMessage: () => null,
       ));
     }
     try {
@@ -229,7 +286,13 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
         reason: PantryEventReason.wasted,
         addToShoppingList: false,
       );
-      emit(state.copyWith(lastConsumeResult: () => result));
+      final message = UiMessage<ConsumeResult>.create(
+        text: 'Marked "${result.item.name}" as thrown away',
+        type: UiMessageType.undo,
+        actionLabel: 'Undo',
+        payload: result,
+      );
+      emit(state.copyWith(uiMessage: () => message));
       await _refresh(emit);
       await _syncService?.syncNotifications();
     } catch (e) {
@@ -250,7 +313,7 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
   ) async {
     try {
       await _repository.undoConsume(event.result);
-      emit(state.copyWith(lastConsumeResult: () => null));
+      emit(state.copyWith(uiMessage: () => null));
       await _refresh(emit);
       await _syncService?.syncNotifications();
     } catch (e) {

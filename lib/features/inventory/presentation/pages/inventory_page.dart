@@ -3,14 +3,20 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/ui/app_snackbar.dart';
+import '../../domain/models/consume_result.dart';
 import '../../domain/models/pantry_category.dart';
-import '../../domain/models/pantry_event_reason.dart';
 import '../../domain/models/pantry_item.dart';
 import '../../../shopping/presentation/cubit/shopping_badge_cubit.dart';
 import '../bloc/inventory_bloc.dart';
 
 class InventoryPage extends StatelessWidget {
   const InventoryPage({super.key});
+
+  void _navigateTo(BuildContext context, String path, {Object? extra}) {
+    AppSnackBar.hide(context);
+    context.push(path, extra: extra);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +43,7 @@ class InventoryPage extends StatelessWidget {
             key: const Key('recipes_button'),
             icon: const Icon(Icons.restaurant_menu),
             tooltip: 'Recipe Ideas',
-            onPressed: () => context.push('/recipes'),
+            onPressed: () => _navigateTo(context, '/recipes'),
           ),
           BlocBuilder<ShoppingBadgeCubit, int>(
             builder: (context, count) {
@@ -51,7 +57,7 @@ class InventoryPage extends StatelessWidget {
                         child: icon,
                       )
                     : icon,
-                onPressed: () => context.push('/shopping'),
+                onPressed: () => _navigateTo(context, '/shopping'),
               );
             },
           ),
@@ -59,13 +65,13 @@ class InventoryPage extends StatelessWidget {
             key: const Key('stats_button'),
             icon: const Icon(Icons.bar_chart),
             tooltip: 'Waste Statistics',
-            onPressed: () => context.push('/stats'),
+            onPressed: () => _navigateTo(context, '/stats'),
           ),
           IconButton(
             key: const Key('settings_button'),
             icon: const Icon(Icons.settings_outlined),
             tooltip: 'Notification Settings',
-            onPressed: () => context.push('/settings'),
+            onPressed: () => _navigateTo(context, '/settings'),
           ),
         ],
       ),
@@ -150,47 +156,41 @@ class InventoryPage extends StatelessWidget {
           // Main Inventory Body
           Expanded(
             child: BlocConsumer<InventoryBloc, InventoryState>(
+              listenWhen: (prev, curr) {
+                return (prev.uiMessage?.id != curr.uiMessage?.id &&
+                        curr.uiMessage != null) ||
+                    (prev.errorMessage != curr.errorMessage &&
+                        curr.errorMessage != null &&
+                        curr.items.isNotEmpty);
+              },
               listener: (context, state) {
-                if (state.lastConsumeResult != null) {
-                  final result = state.lastConsumeResult!;
-                  String message;
-                  if (result.event.reason == PantryEventReason.used) {
-                    if (result.shoppingItemId != null) {
-                      message = 'Added "${result.item.name}" to shopping list';
-                    } else if (result.wasRemoved) {
-                      message = 'Used up "${result.item.name}"';
-                    } else {
-                      message =
-                          'Used 1 "${result.item.name}" (${result.item.quantity - 1} left)';
-                    }
-                  } else if (result.event.reason == PantryEventReason.wasted) {
-                    message = 'Marked "${result.item.name}" as thrown away';
-                  } else {
-                    message = 'Deleted "${result.item.name}"';
-                  }
-
-                  ScaffoldMessenger.of(context).clearSnackBars();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(message),
-                      action: SnackBarAction(
-                        label: 'Undo',
-                        onPressed: () {
-                          context
-                              .read<InventoryBloc>()
-                              .add(InventoryConsumeUndone(result));
-                        },
-                      ),
-                    ),
+                if (state.uiMessage != null) {
+                  final msg = state.uiMessage!;
+                  AppSnackBar.showWithAction(
+                    context,
+                    message: msg.text,
+                    actionLabel: msg.actionLabel ?? 'Undo',
+                    onAction: () {
+                      if (msg.payload is ConsumeResult) {
+                        context.read<InventoryBloc>().add(
+                              InventoryConsumeUndone(
+                                msg.payload as ConsumeResult,
+                              ),
+                            );
+                      }
+                    },
+                    onDismissed: () {
+                      context
+                          .read<InventoryBloc>()
+                          .add(const InventoryMessageDismissed());
+                    },
                   );
                 } else if (state.status == InventoryStatus.failure &&
-                    state.items.isNotEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content:
-                          Text(state.errorMessage ?? 'An error occurred'),
-                      backgroundColor: Theme.of(context).colorScheme.error,
-                    ),
+                    state.items.isNotEmpty &&
+                    state.errorMessage != null) {
+                  AppSnackBar.showError(
+                    context,
+                    message: state.errorMessage!,
                   );
                 }
               },
@@ -305,7 +305,7 @@ class InventoryPage extends StatelessWidget {
             heroTag: 'receipt_fab',
             key: const Key('scan_receipt_fab'),
             tooltip: 'Add from receipt',
-            onPressed: () => context.push('/receipt'),
+            onPressed: () => _navigateTo(context, '/receipt'),
             child: const Icon(Icons.receipt_long),
           ),
           const SizedBox(height: 12),
@@ -313,7 +313,7 @@ class InventoryPage extends StatelessWidget {
             heroTag: 'scan_fab',
             key: const Key('scan_barcode_fab'),
             tooltip: 'Scan barcode',
-            onPressed: () => context.push('/scan'),
+            onPressed: () => _navigateTo(context, '/scan'),
             child: const Icon(Icons.qr_code_scanner),
           ),
           const SizedBox(height: 12),
@@ -321,7 +321,7 @@ class InventoryPage extends StatelessWidget {
             heroTag: 'add_fab',
             key: const Key('add_item_fab'),
             tooltip: 'Add item manually',
-            onPressed: () => context.push('/item/new'),
+            onPressed: () => _navigateTo(context, '/item/new'),
             child: const Icon(Icons.add),
           ),
         ],
@@ -583,7 +583,10 @@ class _ItemTile extends StatelessWidget {
             fontWeight: FontWeight.bold,
           ),
         ),
-        onTap: () => context.push('/item/${item.id}', extra: item),
+        onTap: () {
+          AppSnackBar.hide(context);
+          context.push('/item/${item.id}', extra: item);
+        },
         onLongPress: () => _showItemOptions(context),
       ),
     );

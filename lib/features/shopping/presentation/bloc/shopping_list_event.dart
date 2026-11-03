@@ -95,3 +95,7 @@ class ShoppingListDismissPantryWarning extends ShoppingListEvent {
   const ShoppingListDismissPantryWarning();
 }
 
+class ShoppingListMessageDismissed extends ShoppingListEvent {
+  const ShoppingListMessageDismissed();
+}
+

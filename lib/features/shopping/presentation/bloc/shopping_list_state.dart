@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 
+import '../../../../core/ui/ui_message.dart';
 import '../../domain/models/grouped_shopping_list.dart';
 import '../../domain/models/shopping_item.dart';
 
@@ -10,17 +11,34 @@ class ShoppingListState extends Equatable {
     this.status = ShoppingListStatus.initial,
     this.items = const [],
     this.groupedList = const GroupedShoppingList.empty(),
-    this.lastDeletedItem,
-    this.lastClearedBought,
+    this.uiMessage,
+    ShoppingItem? lastDeletedItem,
+    List<ShoppingItem>? lastClearedBought,
     this.pantryWarningItem,
     this.errorMessage,
-  });
+    // ignore: prefer_initializing_formals - parameters preserve public names for backwards compatibility.
+  })  : _lastDeletedItem = lastDeletedItem,
+        // ignore: prefer_initializing_formals - parameter preserves public name for backwards compatibility.
+        _lastClearedBought = lastClearedBought;
 
   final ShoppingListStatus status;
   final List<ShoppingItem> items;
   final GroupedShoppingList groupedList;
-  final ShoppingItem? lastDeletedItem;
-  final List<ShoppingItem>? lastClearedBought;
+
+  /// One-shot UI notification message with unique ID.
+  final UiMessage<dynamic>? uiMessage;
+
+  final ShoppingItem? _lastDeletedItem;
+  final List<ShoppingItem>? _lastClearedBought;
+
+  ShoppingItem? get lastDeletedItem =>
+      uiMessage?.payload is ShoppingItem ? (uiMessage!.payload as ShoppingItem) : _lastDeletedItem;
+
+  List<ShoppingItem>? get lastClearedBought =>
+      uiMessage?.payload is List<ShoppingItem>
+          ? (uiMessage!.payload as List<ShoppingItem>)
+          : _lastClearedBought;
+
   final ShoppingItem? pantryWarningItem;
   final String? errorMessage;
 
@@ -38,20 +56,44 @@ class ShoppingListState extends Equatable {
     ShoppingListStatus? status,
     List<ShoppingItem>? items,
     GroupedShoppingList? groupedList,
+    UiMessage<dynamic>? Function()? uiMessage,
     ShoppingItem? Function()? lastDeletedItem,
     List<ShoppingItem>? Function()? lastClearedBought,
     ShoppingItem? Function()? pantryWarningItem,
     String? Function()? errorMessage,
   }) {
+    UiMessage<dynamic>? nextUiMessage;
+    if (uiMessage != null) {
+      nextUiMessage = uiMessage();
+    } else if (lastDeletedItem != null) {
+      final item = lastDeletedItem();
+      nextUiMessage = item != null
+          ? UiMessage<ShoppingItem>.create(
+              text: 'Deleted "${item.name}"',
+              type: UiMessageType.undo,
+              actionLabel: 'Undo',
+              payload: item,
+            )
+          : null;
+    } else if (lastClearedBought != null) {
+      final items = lastClearedBought();
+      nextUiMessage = items != null && items.isNotEmpty
+          ? UiMessage<List<ShoppingItem>>.create(
+              text: 'Cleared ${items.length} bought items',
+              type: UiMessageType.undo,
+              actionLabel: 'Undo',
+              payload: items,
+            )
+          : null;
+    } else {
+      nextUiMessage = this.uiMessage;
+    }
+
     return ShoppingListState(
       status: status ?? this.status,
       items: items ?? this.items,
       groupedList: groupedList ?? this.groupedList,
-      lastDeletedItem:
-          lastDeletedItem != null ? lastDeletedItem() : this.lastDeletedItem,
-      lastClearedBought: lastClearedBought != null
-          ? lastClearedBought()
-          : this.lastClearedBought,
+      uiMessage: nextUiMessage,
       pantryWarningItem: pantryWarningItem != null
           ? pantryWarningItem()
           : this.pantryWarningItem,
@@ -64,8 +106,7 @@ class ShoppingListState extends Equatable {
         status,
         items,
         groupedList,
-        lastDeletedItem,
-        lastClearedBought,
+        uiMessage,
         pantryWarningItem,
         errorMessage,
       ];

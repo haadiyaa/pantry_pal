@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import '../../../../core/ui/app_snackbar.dart';
 import '../../../inventory/domain/models/pantry_item.dart';
 import '../../../inventory/presentation/bloc/inventory_bloc.dart';
 import '../../domain/models/product.dart';
@@ -126,8 +127,9 @@ class ScannerPage extends StatelessWidget {
           _onNotFound(context, state.barcode);
         } else if (state is ProductLookupActionCompleted) {
           context.read<InventoryBloc>().add(const InventoryStarted());
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Item quantity increased!')),
+          AppSnackBar.showSuccess(
+            context,
+            message: 'Item quantity increased!',
           );
           context.pop();
         }

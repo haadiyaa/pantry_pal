@@ -10,9 +10,11 @@ final class InventoryState extends Equatable {
     this.searchQuery = '',
     this.selectedCategories = const {},
     this.expiringSoonOnly = false,
-    this.lastConsumeResult,
+    this.uiMessage,
+    ConsumeResult? lastConsumeResult,
     this.errorMessage,
-  });
+    // ignore: prefer_initializing_formals - parameter preserves public name for backwards compatibility.
+  }) : _lastConsumeResult = lastConsumeResult;
 
   final InventoryStatus status;
   final List<PantryItem> items;
@@ -20,8 +22,15 @@ final class InventoryState extends Equatable {
   final String searchQuery;
   final Set<String> selectedCategories;
   final bool expiringSoonOnly;
-  final ConsumeResult? lastConsumeResult;
+
+  /// One-shot UI notification message with unique ID.
+  final UiMessage<ConsumeResult>? uiMessage;
+
+  final ConsumeResult? _lastConsumeResult;
   final String? errorMessage;
+
+  /// Backwards-compatible getter for consume result.
+  ConsumeResult? get lastConsumeResult => uiMessage?.payload ?? _lastConsumeResult;
 
   bool get hasActiveFilters =>
       searchQuery.trim().isNotEmpty ||
@@ -37,9 +46,31 @@ final class InventoryState extends Equatable {
     String? searchQuery,
     Set<String>? selectedCategories,
     bool? expiringSoonOnly,
+    UiMessage<ConsumeResult>? Function()? uiMessage,
     ConsumeResult? Function()? lastConsumeResult,
     String? errorMessage,
   }) {
+    UiMessage<ConsumeResult>? nextUiMessage;
+    ConsumeResult? nextLastConsumeResult;
+    if (uiMessage != null) {
+      nextUiMessage = uiMessage();
+      nextLastConsumeResult = nextUiMessage?.payload;
+    } else if (lastConsumeResult != null) {
+      final res = lastConsumeResult();
+      nextLastConsumeResult = res;
+      nextUiMessage = res != null
+          ? UiMessage.create(
+              text: 'Updated pantry',
+              type: UiMessageType.undo,
+              actionLabel: 'Undo',
+              payload: res,
+            )
+          : null;
+    } else {
+      nextUiMessage = this.uiMessage;
+      nextLastConsumeResult = _lastConsumeResult;
+    }
+
     return InventoryState(
       status: status ?? this.status,
       items: items ?? this.items,
@@ -47,9 +78,8 @@ final class InventoryState extends Equatable {
       searchQuery: searchQuery ?? this.searchQuery,
       selectedCategories: selectedCategories ?? this.selectedCategories,
       expiringSoonOnly: expiringSoonOnly ?? this.expiringSoonOnly,
-      lastConsumeResult: lastConsumeResult != null
-          ? lastConsumeResult()
-          : this.lastConsumeResult,
+      uiMessage: nextUiMessage,
+      lastConsumeResult: nextLastConsumeResult,
       errorMessage: errorMessage,
     );
   }
@@ -62,6 +92,7 @@ final class InventoryState extends Equatable {
         searchQuery,
         selectedCategories,
         expiringSoonOnly,
+        uiMessage,
         lastConsumeResult,
         errorMessage,
       ];

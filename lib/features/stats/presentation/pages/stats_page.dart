@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/ui/app_snackbar.dart';
 import '../../domain/models/stats_period.dart';
 import '../cubit/stats_cubit.dart';
 import '../cubit/stats_state.dart';
@@ -93,11 +94,9 @@ class StatsPage extends StatelessWidget {
         listener: (context, state) {
           final message = state.actionMessage;
           if (message != null) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(message),
-                duration: const Duration(seconds: 3),
-              ),
+            AppSnackBar.showInfo(
+              context,
+              message: message,
             );
             context.read<StatsCubit>().clearActionMessage();
           }

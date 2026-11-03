@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import '../../../../core/ui/app_snackbar.dart';
 import '../cubit/notification_settings_cubit.dart';
 import '../cubit/notification_settings_state.dart';
 import '../../../shopping/presentation/cubit/shopping_settings_cubit.dart';
@@ -37,21 +38,18 @@ class NotificationSettingsPage extends StatelessWidget {
     return BlocConsumer<NotificationSettingsCubit, NotificationSettingsState>(
       listener: (context, state) {
         if (state.testNotificationSent) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Test notification sent! Check your device notifications.'),
-              duration: Duration(seconds: 3),
-            ),
+          AppSnackBar.showSuccess(
+            context,
+            message:
+                'Test notification sent! Check your device notifications.',
           );
           context.read<NotificationSettingsCubit>().resetTestNotificationSent();
         }
 
         if (state.errorMessage != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.errorMessage!),
-              backgroundColor: theme.colorScheme.error,
-            ),
+          AppSnackBar.showError(
+            context,
+            message: state.errorMessage!,
           );
         }
       },

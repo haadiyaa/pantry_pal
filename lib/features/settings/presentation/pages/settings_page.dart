@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../../core/ui/app_snackbar.dart';
 import '../../../inventory/presentation/bloc/inventory_bloc.dart';
 import '../../../shopping/presentation/cubit/shopping_settings_cubit.dart';
 import '../../domain/services/user_data_service.dart';
@@ -128,8 +129,9 @@ class _SettingsView extends StatelessWidget {
               context.read<SettingsCubit>().clearAllData().then((_) {
                 if (context.mounted) {
                   context.read<InventoryBloc>().add(const InventoryStarted());
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('All data cleared successfully.')),
+                  AppSnackBar.showSuccess(
+                    context,
+                    message: 'All data cleared successfully.',
                   );
                 }
               });
@@ -152,11 +154,9 @@ class _SettingsView extends StatelessWidget {
       body: BlocListener<SettingsCubit, SettingsState>(
         listener: (context, state) {
           if (state.errorMessage != null) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.errorMessage!),
-                backgroundColor: theme.colorScheme.error,
-              ),
+            AppSnackBar.showError(
+              context,
+              message: state.errorMessage!,
             );
           }
         },

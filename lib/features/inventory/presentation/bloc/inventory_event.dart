@@ -82,3 +82,7 @@ final class InventoryConsumeUndone extends InventoryEvent {
   @override
   List<Object?> get props => [result];
 }
+
+final class InventoryMessageDismissed extends InventoryEvent {
+  const InventoryMessageDismissed();
+}

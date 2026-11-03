@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/ui/app_snackbar.dart';
 import '../../../inventory/domain/models/pantry_category.dart';
 import '../../../inventory/domain/repositories/pantry_repository.dart';
 import '../../../inventory/presentation/bloc/inventory_bloc.dart';
@@ -55,21 +56,16 @@ class _ReceiptReviewView extends StatelessWidget {
       listener: (context, state) {
         if (state.status == ReceiptReviewStatus.saveSuccess) {
           context.read<InventoryBloc>().add(const InventoryStarted());
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Successfully added ${state.savedCount} items to your pantry!',
-              ),
-              backgroundColor: Colors.green.shade700,
-            ),
-          );
+          final count = state.savedCount;
+          final msg = count == 1
+              ? 'Added 1 item to pantry'
+              : 'Added $count items to pantry';
+          AppSnackBar.showSuccess(context, message: msg);
           context.go('/');
         } else if (state.status == ReceiptReviewStatus.failure) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.errorMessage ?? 'Failed to save items'),
-              backgroundColor: theme.colorScheme.error,
-            ),
+          AppSnackBar.showError(
+            context,
+            message: state.errorMessage ?? 'Failed to save items',
           );
         }
       },

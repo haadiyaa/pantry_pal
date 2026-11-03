@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../../../core/ui/ui_message.dart';
 import '../../../inventory/domain/repositories/pantry_repository.dart';
 import '../../../recipes/domain/services/ingredient_normalizer.dart';
 import '../../domain/models/shopping_item.dart';
@@ -30,11 +31,19 @@ class ShoppingListBloc extends Bloc<ShoppingListEvent, ShoppingListState> {
     on<ShoppingListAddedFromRecipe>(_onAddedFromRecipe);
     on<ShoppingListShareRequested>(_onShareRequested);
     on<ShoppingListDismissPantryWarning>(_onDismissPantryWarning);
+    on<ShoppingListMessageDismissed>(_onMessageDismissed);
   }
 
   final ShoppingRepository shoppingRepository;
   final PantryRepository pantryRepository;
   final DateTime Function() _nowProvider;
+
+  void _onMessageDismissed(
+    ShoppingListMessageDismissed event,
+    Emitter<ShoppingListState> emit,
+  ) {
+    emit(state.copyWith(uiMessage: () => null));
+  }
 
   Future<void> _onStarted(
     ShoppingListStarted event,
@@ -150,7 +159,7 @@ class ShoppingListBloc extends Bloc<ShoppingListEvent, ShoppingListState> {
         state.copyWith(
           items: updated,
           groupedList: ShoppingListGrouper.group(updated),
-          lastDeletedItem: () => itemToDelete,
+          uiMessage: () => null,
         ),
       );
     }
@@ -159,7 +168,13 @@ class ShoppingListBloc extends Bloc<ShoppingListEvent, ShoppingListState> {
       final item = itemToDelete ?? await shoppingRepository.getById(event.id);
       if (item != null) {
         await shoppingRepository.delete(event.id);
-        emit(state.copyWith(lastDeletedItem: () => item));
+        final message = UiMessage<ShoppingItem>.create(
+          text: 'Deleted "${item.name}"',
+          type: UiMessageType.undo,
+          actionLabel: 'Undo',
+          payload: item,
+        );
+        emit(state.copyWith(uiMessage: () => message));
       }
     } catch (e) {
       emit(
@@ -179,7 +194,7 @@ class ShoppingListBloc extends Bloc<ShoppingListEvent, ShoppingListState> {
   ) async {
     try {
       await shoppingRepository.restore(event.item);
-      emit(state.copyWith(lastDeletedItem: () => null));
+      emit(state.copyWith(uiMessage: () => null));
     } catch (e) {
       emit(
         state.copyWith(
@@ -216,7 +231,15 @@ class ShoppingListBloc extends Bloc<ShoppingListEvent, ShoppingListState> {
   ) async {
     try {
       final cleared = await shoppingRepository.clearBought();
-      emit(state.copyWith(lastClearedBought: () => cleared));
+      if (cleared.isNotEmpty) {
+        final message = UiMessage<List<ShoppingItem>>.create(
+          text: 'Cleared ${cleared.length} bought items',
+          type: UiMessageType.undo,
+          actionLabel: 'Undo',
+          payload: cleared,
+        );
+        emit(state.copyWith(uiMessage: () => message));
+      }
     } catch (e) {
       emit(
         state.copyWith(
@@ -235,7 +258,7 @@ class ShoppingListBloc extends Bloc<ShoppingListEvent, ShoppingListState> {
       for (final item in event.items) {
         await shoppingRepository.restore(item);
       }
-      emit(state.copyWith(lastClearedBought: () => null));
+      emit(state.copyWith(uiMessage: () => null));
     } catch (e) {
       emit(
         state.copyWith(

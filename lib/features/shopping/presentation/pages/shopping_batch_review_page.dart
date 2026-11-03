@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/ui/app_snackbar.dart';
 import '../../../inventory/domain/models/pantry_category.dart';
 import '../../../inventory/domain/repositories/pantry_repository.dart';
 import '../../../notifications/domain/services/notification_sync_service.dart';
@@ -69,21 +70,16 @@ class _ShoppingBatchReviewView extends StatelessWidget {
       listenWhen: (prev, curr) => prev.status != curr.status,
       listener: (context, state) {
         if (state.status == ShoppingBatchReviewStatus.success) {
-          ScaffoldMessenger.of(context).clearSnackBars();
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Added bought items to your pantry!'),
-            ),
-          );
+          final count = state.includedCount;
+          final msg = count == 1
+              ? 'Added 1 item to pantry'
+              : 'Added $count items to pantry';
+          AppSnackBar.showSuccess(context, message: msg);
           Navigator.of(context).pop();
         } else if (state.status == ShoppingBatchReviewStatus.failure) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                state.errorMessage ?? 'Failed to move items to pantry',
-              ),
-              backgroundColor: theme.colorScheme.error,
-            ),
+          AppSnackBar.showError(
+            context,
+            message: state.errorMessage ?? 'Failed to move items to pantry',
           );
         }
       },

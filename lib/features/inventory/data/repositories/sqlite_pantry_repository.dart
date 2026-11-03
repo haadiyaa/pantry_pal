@@ -321,6 +321,22 @@ class SqlitePantryRepository implements PantryRepository {
           where: 'id = ?',
           whereArgs: [result.event.id],
         );
+      } else {
+        final latest = await txn.query(
+          AppDatabase.tablePantryEvents,
+          columns: ['id'],
+          where: 'item_name = ? AND reason = ?',
+          whereArgs: [result.item.name, result.event.reason.storageKey],
+          orderBy: 'occurred_at DESC',
+          limit: 1,
+        );
+        if (latest.isNotEmpty) {
+          await txn.delete(
+            AppDatabase.tablePantryEvents,
+            where: 'id = ?',
+            whereArgs: [latest.first['id']],
+          );
+        }
       }
 
       // 2. Restore the pantry item / quantity

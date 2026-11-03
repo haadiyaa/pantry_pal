@@ -326,6 +326,13 @@ void main() {
             totalItemCount: 0,
             selectedCategories: {'Dairy'},
           ),
+          isA<InventoryState>()
+              .having((s) => s.items, 'items', isEmpty)
+              .having(
+                (s) => s.uiMessage?.text,
+                'uiMessage text',
+                'Deleted "Almond Milk"',
+              ),
         ],
         verify: (_) {
           verify(() => repository.delete(1)).called(1);
